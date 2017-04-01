@@ -55,12 +55,16 @@ public class NaiveAgent implements Runnable {
 		aRobot.loadLevel(currentLevel);
 		while (true) {
 			GameState state = solve();
+			// 2017-04-01 : ymkim1019
+			// The shot has already been executed..
 			if (state == GameState.WON) {
 				try {
 					Thread.sleep(3000);
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}
+				// 2017-04-01 : ymkim1019
+				// Update the current stage score
 				int score = StateUtil.getScore(ActionRobot.proxy);
 				if(!scores.containsKey(currentLevel))
 					scores.put(currentLevel, score);
@@ -120,6 +124,9 @@ public class NaiveAgent implements Runnable {
 
 		// capture Image
 		BufferedImage screenshot = ActionRobot.doScreenShot();
+		
+		// 2017-04-01 : ymkim1019
+		System.out.println("screen shot size = " + screenshot.getWidth() + "," + screenshot.getHeight());
 
 		// process image
 		Vision vision = new Vision(screenshot);
@@ -166,6 +173,9 @@ public class NaiveAgent implements Runnable {
 
 					// estimate the trajectory
 					ArrayList<Point> pts = tp.estimateLaunchPoint(sling, _tpt);
+					
+					// 2017-04-01 : ymkim1019
+					System.out.println("# of launch points=" + pts.size());
 					
 					// do a high shot when entering a level to find an accurate velocity
 					if (firstShot && pts.size() > 1) 
@@ -252,6 +262,8 @@ public class NaiveAgent implements Runnable {
 									screenshot = ActionRobot.doScreenShot();
 									vision = new Vision(screenshot);
 									List<Point> traj = vision.findTrajPoints();
+									// 2017-04-01 : ymkim1019
+									// below codes calibrate the trajectory module
 									tp.adjustTrajectory(traj, sling, releasePoint);
 									firstShot = false;
 								}
