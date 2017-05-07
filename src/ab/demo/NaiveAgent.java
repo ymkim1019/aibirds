@@ -16,6 +16,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+// 2017-05-07 : ymkim1019
+import java.net.*;
+import java.io.*;
+import java.lang.String;
 
 import ab.demo.other.ActionRobot;
 import ab.demo.other.Shot;
@@ -30,6 +34,13 @@ public class NaiveAgent implements Runnable {
 	private ActionRobot aRobot;
 	private Random randomGenerator;
 	public int currentLevel = 1;
+	// 2017-05-07 : ymkim1019
+	public String agent_ip = "127.0.0.1";
+	public int agent_port = 2004;
+	public Socket so;
+	public DataInputStream in;
+	public DataOutputStream out;
+	
 	public static int time_limit = 12;
 	private Map<Integer,Integer> scores = new LinkedHashMap<Integer,Integer>();
 	TrajectoryPlanner tp;
@@ -51,10 +62,27 @@ public class NaiveAgent implements Runnable {
 	
 	// run the client
 	public void run() {
-
+		// 2017-04-01 : ymkim1019
+		try {
+			so = new Socket(agent_ip, agent_port);
+			System.out.println("Connected to the Agent..");
+			in = new DataInputStream(so.getInputStream());
+			out = new DataOutputStream(so.getOutputStream());
+		} catch (Exception e) {
+			System.out.println("Fail to connect to the Agent..");
+			return;
+		}
+		
 		aRobot.loadLevel(currentLevel);
 		while (true) {
-			GameState state = solve();
+			GameState state;
+			try {
+				state = solve();
+			} catch (IOException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+				break;
+			}
 			// 2017-04-01 : ymkim1019
 			// The shot has already been executed..
 			if (state == GameState.WON) {
@@ -119,7 +147,7 @@ public class NaiveAgent implements Runnable {
 						* (p1.y - p2.y)));
 	}
 
-	public GameState solve()
+	public GameState solve() throws IOException
 	{
 
 		// capture Image
@@ -152,7 +180,17 @@ public class NaiveAgent implements Runnable {
 		if (sling != null) {
 
 			if (!pigs.isEmpty()) {
-
+				// 2017-05-07 : ymkim1019
+				System.out.println("send..");
+				out.writeInt(8);
+				out.writeInt(1);
+				out.writeInt(1234);
+				out.flush();
+				int size = in.readInt();
+				int job_id = in.readInt();
+				int temp = in.readInt();
+				System.out.format("size=%d, job_id=%d, data=%d\n", size, job_id, temp);
+				
 				Point releasePoint = null;
 				Shot shot = new Shot();
 				int dx,dy;
@@ -287,6 +325,7 @@ public class NaiveAgent implements Runnable {
 		NaiveAgent na = new NaiveAgent();
 		if (args.length > 0)
 			na.currentLevel = Integer.parseInt(args[0]);
+			
 		na.run();
 
 	}
