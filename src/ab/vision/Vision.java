@@ -11,7 +11,11 @@ package ab.vision;
 import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.List;
+
+import javax.imageio.ImageIO;
 
 public class Vision {
 	private BufferedImage image;
@@ -21,6 +25,12 @@ public class Vision {
 	public Vision(BufferedImage image)
 	{
 		this.image = image;
+	}
+	
+	// 2017-05-09 : ymkim1019
+	public BufferedImage getImageBuffer()
+	{
+		return this.image;
 	}
 	
 	public List<ABObject> findBirdsMBR()

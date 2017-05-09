@@ -5,4 +5,5 @@
 .project
 .externalToolBuilders
 .idea
-__pycahe__
+*.jpg
+__pycache__

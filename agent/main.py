@@ -29,7 +29,7 @@ def main():
         (conn, (ip, port)) = tcpServer.accept()
         new_thread = ComThread(ip, port, conn, agent_thread)
         new_thread.moveToThread(new_thread)
-        agent_thread.connect_signal()
+        new_thread.connect_signal()
         new_thread.start()
 
 if __name__ == "__main__":

@@ -33,5 +33,6 @@ class EventTask(QThread):
                 print("pop")
                 obj = self.job_queue.pop(0)
                 self.job_arrived.emit(obj)
+                self.msleep(10)
 
 

@@ -16,6 +16,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+
+import javax.imageio.ImageIO;
+
 // 2017-05-07 : ymkim1019
 import java.net.*;
 import java.io.*;
@@ -28,6 +31,8 @@ import ab.utils.StateUtil;
 import ab.vision.ABObject;
 import ab.vision.GameStateExtractor.GameState;
 import ab.vision.Vision;
+
+
 
 public class NaiveAgent implements Runnable {
 
@@ -46,6 +51,15 @@ public class NaiveAgent implements Runnable {
 	TrajectoryPlanner tp;
 	private boolean firstShot;
 	private Point prevTarget;
+	
+	public enum EnvToAgentJobId {
+		FROM_ENV_TO_AGENT_REQUEST_FOR_ACTION;
+	}
+	
+	public enum AgentToEnvJobId {
+		FROM_AGENT_TO_ENV_DO_ACTION;
+	}
+	
 	// a standalone implementation of the Naive Agent
 	public NaiveAgent() {
 		
@@ -58,7 +72,6 @@ public class NaiveAgent implements Runnable {
 		ActionRobot.GoFromMainMenuToLevelSelection();
 
 	}
-
 	
 	// run the client
 	public void run() {
@@ -147,6 +160,21 @@ public class NaiveAgent implements Runnable {
 						* (p1.y - p2.y)));
 	}
 
+	public void send_env_to_agent(Vision vision) throws IOException
+	{
+		BufferedImage imgBuf = vision.getImageBuffer();
+		System.out.println("send the environments to the agent..");
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		ImageIO.write(imgBuf, "jpg", baos );
+		baos.flush();
+		byte[] imageInByte=baos.toByteArray();
+		baos.close();
+		out.writeInt(4 + baos.size()); // Job ID + Img
+		out.writeInt(EnvToAgentJobId.FROM_ENV_TO_AGENT_REQUEST_FOR_ACTION.ordinal()); // Job ID
+		out.write(imageInByte);
+		out.flush();
+	}
+	
 	public GameState solve() throws IOException
 	{
 
@@ -181,11 +209,8 @@ public class NaiveAgent implements Runnable {
 
 			if (!pigs.isEmpty()) {
 				// 2017-05-07 : ymkim1019
-				System.out.println("send..");
-				out.writeInt(8);
-				out.writeInt(1);
-				out.writeInt(1234);
-				out.flush();
+				send_env_to_agent(vision);
+				
 				int size = in.readInt();
 				int job_id = in.readInt();
 				int temp = in.readInt();
