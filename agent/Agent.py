@@ -24,7 +24,7 @@ class Agent(EventTask):
             fake_file.write(data)
             im = Image.open(fake_file)
             im_arr = np.array(im)
-            #im.show()
+            # im.show()
 
             # do something..
 
