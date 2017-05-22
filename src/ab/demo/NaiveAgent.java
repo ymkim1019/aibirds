@@ -107,8 +107,10 @@ public class NaiveAgent implements Runnable {
 					e.printStackTrace();
 				}
 				// 2017-04-01 : ymkim1019
-				// Update the current stage score
+				// Update the current stage score and stars
 				int score = StateUtil.getScore(ActionRobot.proxy);
+				int stars = StateUtil.getStars(ActionRobot.proxy);
+
 				if(!scores.containsKey(currentLevel))
 					scores.put(currentLevel, score);
 				else
@@ -121,7 +123,7 @@ public class NaiveAgent implements Runnable {
 
 					totalScore += scores.get(key);
 					System.out.println(" Level " + key
-							+ " Score: " + scores.get(key) + " ");
+							+ " Score: " + scores.get(key) + " Stars: " + Integer.toString(stars));
 				}
 				System.out.println("Total Score: " + totalScore);
 				aRobot.loadLevel(++currentLevel);
@@ -311,6 +313,8 @@ public class NaiveAgent implements Runnable {
 						}
 				}
 
+				// ymkim1019 below lines are commented to speed up the game progress
+				/*
 				// check whether the slingshot is changed. the change of the slingshot indicates a change in the scale.
 				{
 					ActionRobot.fullyZoomOut();
@@ -344,6 +348,7 @@ public class NaiveAgent implements Runnable {
 					else
 						System.out.println("no sling detected, can not execute the shot, will re-segement the image");
 				}
+				*/
 
 			}
 
