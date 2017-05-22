@@ -32,7 +32,8 @@ import ab.vision.ABObject;
 import ab.vision.GameStateExtractor.GameState;
 import ab.vision.Vision;
 
-
+// 2017-05-17 : jyham
+import ab.vision.Preprocessor;
 
 public class NaiveAgent implements Runnable {
 
@@ -51,6 +52,7 @@ public class NaiveAgent implements Runnable {
 	TrajectoryPlanner tp;
 	private boolean firstShot;
 	private Point prevTarget;
+	
 	
 	public enum EnvToAgentJobId {
 		FROM_ENV_TO_AGENT_REQUEST_FOR_ACTION;
@@ -163,6 +165,10 @@ public class NaiveAgent implements Runnable {
 	public void send_env_to_agent(Vision vision) throws IOException
 	{
 		BufferedImage imgBuf = vision.getImageBuffer();
+		// 2017-05-17 : jyham
+		Preprocessor prep = new Preprocessor(imgBuf);
+		imgBuf = prep.drawImage(imgBuf, false);
+		
 		System.out.println("send the environments to the agent..");
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		ImageIO.write(imgBuf, "jpg", baos );
