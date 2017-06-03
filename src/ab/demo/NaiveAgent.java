@@ -29,6 +29,7 @@ import ab.demo.other.Shot;
 import ab.planner.TrajectoryPlanner;
 import ab.utils.StateUtil;
 import ab.vision.ABObject;
+import ab.vision.ABType;
 import ab.vision.GameStateExtractor.GameState;
 import ab.vision.Vision;
 
@@ -171,14 +172,29 @@ public class NaiveAgent implements Runnable {
 		Preprocessor prep = new Preprocessor(imgBuf);
 		imgBuf = prep.drawImage(imgBuf, false);
 		
+		// 2017-06-03 : jyham
+		ABType[] birds_seq = prep.getBirds();
+		int max_birds_num = 10;
+		
 		System.out.println("send the environments to the agent..");
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		ImageIO.write(imgBuf, "jpg", baos );
 		baos.flush();
 		byte[] imageInByte=baos.toByteArray();
 		baos.close();
-		out.writeInt(4 + baos.size()); // Job ID + Img
+		//out.writeInt(4 + baos.size()); // Job ID + Img
+		// 2017-06-03 : jyham
+		out.writeInt(4 + 4*max_birds_num + baos.size()); // Job ID + birds sequence + Img
 		out.writeInt(EnvToAgentJobId.FROM_ENV_TO_AGENT_REQUEST_FOR_ACTION.ordinal()); // Job ID
+		
+		for (int i = 0; i < max_birds_num ; i++){
+			if (i<birds_seq.length) {
+				out.writeInt(birds_seq[i].id);
+				System.out.println(birds_seq[i] + " " +birds_seq[i].id);
+			}
+			else out.writeInt(0);
+		} // birds sequence
+		
 		out.write(imageInByte);
 		out.flush();
 	}
@@ -314,7 +330,7 @@ public class NaiveAgent implements Runnable {
 				}
 
 				// ymkim1019 below lines are commented to speed up the game progress
-				/*
+				
 				// check whether the slingshot is changed. the change of the slingshot indicates a change in the scale.
 				{
 					ActionRobot.fullyZoomOut();
@@ -348,7 +364,7 @@ public class NaiveAgent implements Runnable {
 					else
 						System.out.println("no sling detected, can not execute the shot, will re-segement the image");
 				}
-				*/
+				
 
 			}
 
