@@ -20,8 +20,16 @@ class Agent(EventTask):
             print(str.format("Processing Job id:{}..", job_id))
 
         if job_id == self.FROM_ENV_TO_AGENT_REQUEST_FOR_ACTION:
+            # 2017-06-03 : jyham -- get birds sequence
+            max_birds_num = 10
+            birds_seq = []
+            for i in range(max_birds_num):
+                print(struct.unpack("!i", data[i * 4:(i + 1) * 4])[0])
+                birds_seq.append(struct.unpack("!i", data[i * 4:(i + 1) * 4])[0])
+            print(birds_seq)
+
             fake_file = io.BytesIO()
-            fake_file.write(data)
+            fake_file.write(data[4*max_birds_num:])
             im = Image.open(fake_file)
             im_arr = np.array(im)
             im.show()
