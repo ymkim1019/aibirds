@@ -145,7 +145,7 @@ public class TrajectoryPlanner {
         
         // calculate relative position of the target (normalised)
         double scale = getSceneScale(slingshot);
-        //System.out.println("scale " + scale);
+        System.out.println("scale " + scale);
         Point ref = getReferencePoint(slingshot);
             
         double x = (targetPoint.x - ref.x) / scale;

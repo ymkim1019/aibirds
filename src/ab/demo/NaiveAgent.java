@@ -109,7 +109,7 @@ public class NaiveAgent implements Runnable {
 				// 2017-04-01 : ymkim1019
 				// Update the current stage score and stars
 				int score = StateUtil.getScore(ActionRobot.proxy);
-				int stars = StateUtil.getStars(ActionRobot.proxy);
+				//int stars = StateUtil.getStars(ActionRobot.proxy);
 
 				if(!scores.containsKey(currentLevel))
 					scores.put(currentLevel, score);
@@ -123,7 +123,7 @@ public class NaiveAgent implements Runnable {
 
 					totalScore += scores.get(key);
 					System.out.println(" Level " + key
-							+ " Score: " + scores.get(key) + " Stars: " + Integer.toString(stars));
+							+ " Score: " + scores.get(key));
 				}
 				System.out.println("Total Score: " + totalScore);
 				aRobot.loadLevel(++currentLevel);
@@ -164,7 +164,7 @@ public class NaiveAgent implements Runnable {
 						* (p1.y - p2.y)));
 	}
 
-	public void send_env_to_agent(Vision vision) throws IOException
+	public void send_env_to_agent(Vision vision,int x,int y, int width, int height) throws IOException
 	{
 		BufferedImage imgBuf = vision.getImageBuffer();
 		// 2017-05-17 : jyham
@@ -177,10 +177,15 @@ public class NaiveAgent implements Runnable {
 		baos.flush();
 		byte[] imageInByte=baos.toByteArray();
 		baos.close();
-		out.writeInt(4 + baos.size()); // Job ID + Img
+		out.writeInt(4 + baos.size() + 16); // Job ID + Img + sling infomation
 		out.writeInt(EnvToAgentJobId.FROM_ENV_TO_AGENT_REQUEST_FOR_ACTION.ordinal()); // Job ID
 		out.write(imageInByte);
+		out.writeInt(x);
+		out.writeInt(y);
+		out.writeInt(width);
+		out.writeInt(height);
 		out.flush();
+		System.out.println("send complete");
 	}
 	
 	public GameState solve() throws IOException
@@ -217,16 +222,18 @@ public class NaiveAgent implements Runnable {
 
 			if (!pigs.isEmpty()) {
 				// 2017-05-07 : ymkim1019
-				send_env_to_agent(vision);
+				send_env_to_agent(vision,sling.x,sling.y,sling.width,sling.height);
 				
-				int size = in.readInt();
-				int job_id = in.readInt();
-				int temp = in.readInt();
-				System.out.format("size=%d, job_id=%d, data=%d\n", size, job_id, temp);
-				
+				int size = Integer.reverseBytes(in.readInt());
+				int job_id = Integer.reverseBytes(in.readInt());
+				int dx = Integer.reverseBytes(in.readInt());
+				int dy = Integer.reverseBytes(in.readInt());
+				int tapint = Integer.reverseBytes(in.readInt());
+				System.out.format("size=%d, job_id=%d, data=%d\n", size, job_id, dx);
+
 				Point releasePoint = null;
 				Shot shot = new Shot();
-				int dx,dy;
+				//int dx,dy;
 				{
 					// random pick up a pig
 					ABObject pig = pigs.get(randomGenerator.nextInt(pigs.size()));
@@ -314,7 +321,7 @@ public class NaiveAgent implements Runnable {
 				}
 
 				// ymkim1019 below lines are commented to speed up the game progress
-				/*
+				
 				// check whether the slingshot is changed. the change of the slingshot indicates a change in the scale.
 				{
 					ActionRobot.fullyZoomOut();
@@ -348,7 +355,7 @@ public class NaiveAgent implements Runnable {
 					else
 						System.out.println("no sling detected, can not execute the shot, will re-segement the image");
 				}
-				*/
+				
 
 			}
 

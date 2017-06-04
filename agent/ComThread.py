@@ -1,20 +1,22 @@
 import struct
 import copy
-from PyQt4.QtCore import QThread, pyqtSignal
-
+from PyQt5.QtCore import QThread, pyqtSignal
+import queue
 
 class ComThread(QThread):
     data_send_requested = pyqtSignal()
 
-    def __init__(self, ip, port, conn, agent):
+    def __init__(self, ip, port, conn, agent,queue):
         super(ComThread, self).__init__()
 
         self.ip = ip
         self.port = port
         self.sock_conn = conn
         self.agent = agent
+        self.queue = queue
         self.verbose = True
         self.send_buf = list()
+
 
         if self.verbose:
             print("[+] New server socket thread started for " + ip + ":" + str(port))
@@ -70,6 +72,7 @@ class ComThread(QThread):
                 print(str.format("Server received data from {}:{}", self.ip, self.port))
 
             self.agent.add_job(job_id, copied_data, self)
+
 
 
 

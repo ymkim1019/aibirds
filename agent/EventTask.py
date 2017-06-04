@@ -1,4 +1,4 @@
-from PyQt4.QtCore import QThread, pyqtSignal
+from PyQt5.QtCore import QThread, pyqtSignal
 
 
 class EventTask(QThread):
@@ -34,5 +34,4 @@ class EventTask(QThread):
                 obj = self.job_queue.pop(0)
                 self.job_arrived.emit(obj)
                 self.msleep(10)
-
 
