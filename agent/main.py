@@ -1,6 +1,6 @@
 import sys
 import socket
-from PyQt4 import QtGui
+from PyQt5.QtWidgets import QApplication
 from Agent import Agent
 from ComThread import ComThread
 
@@ -33,6 +33,6 @@ def main():
         new_thread.start()
 
 if __name__ == "__main__":
-    app = QtGui.QApplication(sys.argv)
+    app = QApplication(sys.argv)
     main()
     sys.exit(app.exec_())
