@@ -29,4 +29,28 @@ public enum ABType {
 	{
 		this.id = id;
 	}
+	public String toString()
+	{
+		String ret = "";
+		
+		switch(this.id)
+		{
+		case 4:
+			ret = "RedBird";
+			break;
+		case 5:
+			ret = "YellowBird";
+			break;
+		case 6:
+			ret = "BlueBird";
+			break;
+		case 7:
+			ret = "BlackBird";
+			break;
+		case 8:
+			ret = "WhiteBird";
+			break;			
+		}
+		return ret;
+	}
 }

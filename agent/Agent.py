@@ -1,32 +1,130 @@
 import numpy as np
-import struct
-import io
-from PIL import Image
 from EventTask import EventTask
+import tensorflow as tf
+from ReplayBuffer import ReplayBuffer
+from ActorNetwork import ActorNetwork
+from CriticNetwork import CriticNetwork
+from OU import OU
+from Configuration import globalConfig
+import math
+import keras.backend as K
+
 
 class Agent(EventTask):
-    # From the environments to the agent
-    FROM_ENV_TO_AGENT_REQUEST_FOR_ACTION = 0
+    # ENV -> AGENT
+    OBSERVE = 0
 
-    # From the agent to the environments
-    FROM_AGENT_TO_ENV_DO_ACTION = 0
+    # AGENT -> ENV
+    ACT = 0
 
-    def __init__(self):
+    def __init__(self, trainable=1):
         super(Agent, self).__init__('Agent')
 
+        np.random.seed(1337)
+
+        self.step = 0
+        self.state_cache = dict()
+        self.action_cache = dict()
+
+        # Tensorflow GPU optimization
+        config = tf.ConfigProto()
+        config.gpu_options.allow_growth = True
+        self.sess = tf.Session(config=config)
+        self.trainable = trainable
+        K.set_session(self.sess)
+
+        self.actor = ActorNetwork(self.sess, globalConfig.TAU, globalConfig.LRA)
+        self.critic = CriticNetwork(self.sess, globalConfig.TAU, globalConfig.LRC)
+
+        self.buff = ReplayBuffer(globalConfig.BUFFER_SIZE)  # Create replay buffer
+
+        # Now load the weight
+        print("Now we load the weight")
+        try:
+            self.actor.model.load_weights("actormodel.h5")
+            self.critic.model.load_weights("criticmodel.h5")
+            self.actor.target_model.load_weights("actormodel.h5")
+            self.critic.target_model.load_weights("criticmodel.h5")
+            print("Weight load successfully")
+        except:
+            print("Cannot find the weight")
+
+        self.graph = tf.get_default_graph()
+
+
     def do_job(self, job_obj):
-        (job_id, data, com_thread) = job_obj
+        (job_id, data, env_proxy) = job_obj
         if self.verbose:
             print(str.format("Processing Job id:{}..", job_id))
 
-        if job_id == self.FROM_ENV_TO_AGENT_REQUEST_FOR_ACTION:
-            fake_file = io.BytesIO()
-            fake_file.write(data)
-            im = Image.open(fake_file)
-            im_arr = np.array(im)
-            im.show()
+        with self.graph.as_default():
+            if job_id == self.OBSERVE:
+                # observation
+                is_first_shot, done, n_pigs, n_stones, n_woods, n_ices, n_tnts, bird_type, im, r_t = data
+                print(str.format("----> observation from {}", env_proxy.get_client_ip()))
+                print(str.format("first shot:{}, reward:{}, episode done:{}", is_first_shot, r_t, done))
+                print(str.format("# pigs={}, # stones={}, # woods={}, # ices={}, n_tnts={}, bird={}"
+                                 , n_pigs, n_stones, n_woods, n_ices, n_tnts, bird_type))
+                # print('im shape=', im.shape)
+                s_t1 = [np.array(im), np.array([n_pigs, n_stones, n_woods, n_ices, n_tnts]), np.array([bird_type])]
 
-            # do something..
+                # store transition into replay buffer
+                if is_first_shot is False:
+                    self.buff.add(self.state_cache[env_proxy], self.action_cache[env_proxy], r_t, s_t1, done)
 
-            # decision notification
-            com_thread.send_data(self.FROM_AGENT_TO_ENV_DO_ACTION, struct.pack("i", 1234)) # temp implementation
+                    print("Do the batch update...")
+
+                    # Do the batch update
+                    batch = self.buff.getBatch(globalConfig.BATCH_SIZE)
+                    states = np.asarray([e[0] for e in batch])
+                    actions = np.asarray([e[1] for e in batch])
+                    rewards = np.asarray([e[2] for e in batch])
+                    new_states = np.asarray([e[3] for e in batch])
+                    dones = np.asarray([e[4] for e in batch])
+                    y_t = np.asarray([e[1] for e in batch])
+
+                    print('batch update shape, size =', len(batch))
+                    print(np.asarray(np.vstack(new_states[:, 0])).shape)
+                    print(np.asarray(np.vstack(new_states[:, 1])).shape)
+                    print(np.asarray(np.vstack(new_states[:, 2])).shape)
+
+                    # new_a = self.actor.target_model.predict([new_states[:, 0], new_states[:, 1], new_states[:, 2]])
+                    #
+                    # target_q_values = self.critic.target_model.predict(
+                    #     [new_states, self.actor.target_model.predict(new_states)])
+                    #
+                    # for k in range(len(batch)):
+                    #     if dones[k]:
+                    #         y_t[k] = rewards[k]
+                    #     else:
+                    #         y_t[k] = rewards[k] + globalConfig.GAMMA * target_q_values[k]
+
+                    # loss = 0
+                    # if self.trainable:
+                    #     loss += self.critic.model.train_on_batch([states, actions], y_t)
+                    #     a_for_grad = self.actor.model.predict(states)
+                    #     grads = self.critic.gradients(states, a_for_grad)
+                    #     self.actor.train(states, grads)
+                    #     self.actor.target_train()
+                    #     self.critic.target_train()
+
+                # select action a_t
+                s_t = s_t1
+                pixels = np.reshape(s_t[0], tuple([1]) + s_t[0].shape)
+                num_objects = np.reshape(s_t[1], tuple([1]) + s_t[1].shape)
+                input_bird = np.reshape(s_t[2], tuple([1]) + s_t[2].shape)
+
+                # print(pixels.shape, num_objects.shape, input_bird.shape)
+
+                a_t = self.actor.model.predict([pixels, num_objects, input_bird])
+                target = math.floor(a_t[0][0] * np.sum(s_t[1]))
+                high_shot = 1 if a_t[0][1] > 0.5 else 0
+                tap_time = math.floor(65 + a_t[0][2] * 25)
+                print(str.format("next action: target({}), high_shot({}), tap time({})", target, high_shot, tap_time))
+
+                # cache
+                self.state_cache[env_proxy] = s_t
+                self.action_cache[env_proxy] = a_t
+
+                # execute an action
+                env_proxy.execute(target, high_shot, tap_time)

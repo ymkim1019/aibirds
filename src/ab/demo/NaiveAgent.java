@@ -29,8 +29,11 @@ import ab.demo.other.Shot;
 import ab.planner.TrajectoryPlanner;
 import ab.utils.StateUtil;
 import ab.vision.ABObject;
+import ab.vision.ABType;
 import ab.vision.GameStateExtractor.GameState;
 import ab.vision.Vision;
+// 2017-06-04 : ymkim1019
+import ab.vision.VisionMBR;
 
 // 2017-05-17 : jyham
 import ab.vision.Preprocessor;
@@ -55,11 +58,11 @@ public class NaiveAgent implements Runnable {
 	
 	
 	public enum EnvToAgentJobId {
-		FROM_ENV_TO_AGENT_REQUEST_FOR_ACTION;
+		OBSERVE;
 	}
 	
 	public enum AgentToEnvJobId {
-		FROM_AGENT_TO_ENV_DO_ACTION;
+		ACT;
 	}
 	
 	// a standalone implementation of the Naive Agent
@@ -164,23 +167,46 @@ public class NaiveAgent implements Runnable {
 						* (p1.y - p2.y)));
 	}
 
-	public void send_env_to_agent(Vision vision) throws IOException
+	public void send_env_to_agent(Vision vision, int first_shot, int done, int n_stars, int n_pigs, int n_stones
+			, int n_woods, int n_ices, int n_tnts, ABType bird_type) throws IOException
 	{
+		System.out.println("send the environments to the agent..");
+		
+		// Img arr
 		BufferedImage imgBuf = vision.getImageBuffer();
 		// 2017-05-17 : jyham
 		Preprocessor prep = new Preprocessor(imgBuf);
 		imgBuf = prep.drawImage(imgBuf, false);
-		
-		System.out.println("send the environments to the agent..");
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		ImageIO.write(imgBuf, "jpg", baos );
 		baos.flush();
 		byte[] imageInByte=baos.toByteArray();
 		baos.close();
-		out.writeInt(4 + baos.size()); // Job ID + Img
-		out.writeInt(EnvToAgentJobId.FROM_ENV_TO_AGENT_REQUEST_FOR_ACTION.ordinal()); // Job ID
+		
+		out.writeInt(4 * 10 + baos.size());
+		out.writeInt(EnvToAgentJobId.OBSERVE.ordinal()); // Job ID
+		out.writeInt(first_shot); // first shot
+		out.writeInt(done); // done
+		out.writeInt(n_stars); // n_stars
+		out.writeInt(n_pigs); // # of pigs
+		out.writeInt(n_stones); // # of stones
+		out.writeInt(n_woods); // # of wood blocks
+		out.writeInt(n_ices); // # of ice blocks
+		out.writeInt(n_tnts); // # of TNTs
+		out.writeInt(bird_type.id-3); // bird type on the sling
 		out.write(imageInByte);
 		out.flush();
+		
+		System.out.println("-------- observation --------");
+		System.out.println("-> first shot : " + first_shot);
+		System.out.println("-> done : " + done);
+		System.out.println("-> n_stars : " + n_stars);
+		System.out.println("-> # pigs : " + n_pigs);
+		System.out.println("-> # stones : " + n_stones);
+		System.out.println("-> # woods : " + n_woods);
+		System.out.println("-> # ices : " + n_ices);
+		System.out.println("-> # tnts : " + n_tnts);
+		System.out.println("-> bird : " + bird_type.toString());
 	}
 	
 	public GameState solve() throws IOException
@@ -190,11 +216,12 @@ public class NaiveAgent implements Runnable {
 		BufferedImage screenshot = ActionRobot.doScreenShot();
 		
 		// 2017-04-01 : ymkim1019
-		System.out.println("screen shot size = " + screenshot.getWidth() + "," + screenshot.getHeight());
+		//System.out.println("screen shot size = " + screenshot.getWidth() + "," + screenshot.getHeight());
 
 		// process image
 		Vision vision = new Vision(screenshot);
-
+		VisionMBR vision_mbr = new VisionMBR(screenshot); // 2017-06-04 : ymkim1019
+		
 		// find the slingshot
 		Rectangle sling = vision.findSlingshotMBR();
 
@@ -217,12 +244,21 @@ public class NaiveAgent implements Runnable {
 
 			if (!pigs.isEmpty()) {
 				// 2017-05-07 : ymkim1019
-				send_env_to_agent(vision);
+				List<Rectangle> stones = vision_mbr.findStonesMBR();
+				List<Rectangle> woods = vision_mbr.findWoodMBR();
+				List<Rectangle> ices = vision_mbr.findIceMBR();
+				List<Rectangle> tnts = vision_mbr.findTNTsMBR();
+				
+				send_env_to_agent(vision, (firstShot)? 1 : 0, 0, 0, pigs.size(), stones.size()
+						, woods.size(), ices.size(), tnts.size(), aRobot.getBirdTypeOnSling());
 				
 				int size = in.readInt();
 				int job_id = in.readInt();
-				int temp = in.readInt();
-				System.out.format("size=%d, job_id=%d, data=%d\n", size, job_id, temp);
+				int target = in.readInt();
+				int high_shot = in.readInt();
+				int tap_time = in.readInt();
+				System.out.format("size=%d, job_id=%d, target=%d, high_shot=%d, tap_time=%d, first_shot=%d\n"
+						, size, job_id, target, high_shot, tap_time, firstShot);
 				
 				Point releasePoint = null;
 				Shot shot = new Shot();
@@ -313,8 +349,6 @@ public class NaiveAgent implements Runnable {
 						}
 				}
 
-				// ymkim1019 below lines are commented to speed up the game progress
-				/*
 				// check whether the slingshot is changed. the change of the slingshot indicates a change in the scale.
 				{
 					ActionRobot.fullyZoomOut();
@@ -348,8 +382,6 @@ public class NaiveAgent implements Runnable {
 					else
 						System.out.println("no sling detected, can not execute the shot, will re-segement the image");
 				}
-				*/
-
 			}
 
 		}
