@@ -19,6 +19,7 @@ class EnvProxy(QThread):
         self.agent = agent
         self.verbose = True
         self.send_buf = list()
+        self.last_n_pigs = None
 
         if self.verbose:
             print("[+] New server socket thread started for " + ip + ":" + str(port))
@@ -94,7 +95,17 @@ class EnvProxy(QThread):
                 # im.show()
                 im = np.array(im.convert('L'))
                 im = im[:, :, np.newaxis]
-                r = n_stars # temp
+
+                r = -1 # one shot
+                if is_first_shot is True:
+                    if n_stars == 0:
+                        r += -10 # level failed
+                    else:
+                        r += n_stars * 3
+                else:
+                    r += (self.last_n_pigs - n_pigs) * 2
+
+                self.last_n_pigs = n_pigs
                 ob = (is_first_shot, done, n_pigs, n_stones, n_woods, n_ices, n_tnts, bird_type, im, r)
                 self.agent.add_job(job_id, ob, self)
             else:

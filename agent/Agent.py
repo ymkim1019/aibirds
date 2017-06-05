@@ -69,44 +69,55 @@ class Agent(EventTask):
                 s_t1 = [np.array(im), np.array([n_pigs, n_stones, n_woods, n_ices, n_tnts]), np.array([bird_type])]
 
                 # store transition into replay buffer
-                if is_first_shot is False:
+                try:
                     self.buff.add(self.state_cache[env_proxy], self.action_cache[env_proxy], r_t, s_t1, done)
+                    print("store transition into replay buffer")
+                except Exception as e:
+                    print("first shot of the game")
+                    pass
 
+                if self.buff.count() > 0:
                     print("Do the batch update...")
 
                     # Do the batch update
                     batch = self.buff.getBatch(globalConfig.BATCH_SIZE)
-                    states = np.asarray([e[0] for e in batch])
+                    # states = np.asarray([e[0] for e in batch])
+                    images = [e[0][0] for e in batch]
+                    num_objects = [e[0][1] for e in batch]
+                    birds = [e[0][2] for e in batch]
+                    states = [np.array(images), np.array(num_objects), np.array(birds)]
                     actions = np.asarray([e[1] for e in batch])
                     rewards = np.asarray([e[2] for e in batch])
-                    new_states = np.asarray([e[3] for e in batch])
+                    new_images = [e[3][0] for e in batch]
+                    new_num_objects = [e[3][1] for e in batch]
+                    new_birds = [e[3][2] for e in batch]
+                    new_states = [np.array(new_images), np.array(new_num_objects), np.array(new_birds)]
                     dones = np.asarray([e[4] for e in batch])
                     y_t = np.asarray([e[1] for e in batch])
 
-                    print('batch update shape, size =', len(batch))
-                    print(np.asarray(np.vstack(new_states[:, 0])).shape)
-                    print(np.asarray(np.vstack(new_states[:, 1])).shape)
-                    print(np.asarray(np.vstack(new_states[:, 2])).shape)
+                    # print('batch update shape, size =', len(batch))
+                    # print(np.array(images).shape)
+                    # print(np.array(num_objects).shape)
+                    # print(np.array(birds).shape)
 
-                    # new_a = self.actor.target_model.predict([new_states[:, 0], new_states[:, 1], new_states[:, 2]])
-                    #
-                    # target_q_values = self.critic.target_model.predict(
-                    #     [new_states, self.actor.target_model.predict(new_states)])
-                    #
-                    # for k in range(len(batch)):
-                    #     if dones[k]:
-                    #         y_t[k] = rewards[k]
-                    #     else:
-                    #         y_t[k] = rewards[k] + globalConfig.GAMMA * target_q_values[k]
+                    new_a = self.actor.target_model.predict(states)
+                    # print('new_a=\n', new_a)
+                    target_q_values = self.critic.target_model.predict(new_states + [new_a])
+                    # print('q values =\n', target_q_values)
 
-                    # loss = 0
-                    # if self.trainable:
-                    #     loss += self.critic.model.train_on_batch([states, actions], y_t)
-                    #     a_for_grad = self.actor.model.predict(states)
-                    #     grads = self.critic.gradients(states, a_for_grad)
-                    #     self.actor.train(states, grads)
-                    #     self.actor.target_train()
-                    #     self.critic.target_train()
+                    for k in range(len(batch)):
+                        if dones[k]:
+                            y_t[k] = rewards[k]
+                        else:
+                            y_t[k] = rewards[k] + globalConfig.GAMMA * target_q_values[k]
+
+                    if self.trainable:
+                        print('loss =', self.critic.model.train_on_batch(states + [actions], y_t))
+                        a_for_grad = self.actor.model.predict(states)
+                        grads = self.critic.gradients(states, a_for_grad)
+                        self.actor.train(states, grads)
+                        self.actor.target_train()
+                        self.critic.target_train()
 
                 # select action a_t
                 s_t = s_t1
@@ -120,11 +131,12 @@ class Agent(EventTask):
                 target = math.floor(a_t[0][0] * np.sum(s_t[1]))
                 high_shot = 1 if a_t[0][1] > 0.5 else 0
                 tap_time = math.floor(65 + a_t[0][2] * 25)
+                print('raw a_t =', a_t)
                 print(str.format("next action: target({}), high_shot({}), tap time({})", target, high_shot, tap_time))
 
                 # cache
                 self.state_cache[env_proxy] = s_t
-                self.action_cache[env_proxy] = a_t
+                self.action_cache[env_proxy] = a_t[0]
 
                 # execute an action
                 env_proxy.execute(target, high_shot, tap_time)

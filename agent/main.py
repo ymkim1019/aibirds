@@ -11,6 +11,7 @@ def main():
     parser.add_argument("-trainable", "--trainable", default=1, type=int)
 
     args = parser.parse_args()
+    print(args)
 
     # Multithreaded Python server : TCP Server Socket Program Stub
     TCP_IP = '0.0.0.0'

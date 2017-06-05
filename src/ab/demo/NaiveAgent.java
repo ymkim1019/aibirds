@@ -49,6 +49,7 @@ public class NaiveAgent implements Runnable {
 	public Socket so;
 	public DataInputStream in;
 	public DataOutputStream out;
+	public int stars = 0;
 	
 	public static int time_limit = 12;
 	private Map<Integer,Integer> scores = new LinkedHashMap<Integer,Integer>();
@@ -112,7 +113,7 @@ public class NaiveAgent implements Runnable {
 				// 2017-04-01 : ymkim1019
 				// Update the current stage score and stars
 				int score = StateUtil.getScore(ActionRobot.proxy);
-				int stars = StateUtil.getStars(ActionRobot.proxy);
+				stars = StateUtil.getStars(ActionRobot.proxy);
 
 				if(!scores.containsKey(currentLevel))
 					scores.put(currentLevel, score);
@@ -249,7 +250,7 @@ public class NaiveAgent implements Runnable {
 				List<Rectangle> ices = vision_mbr.findIceMBR();
 				List<Rectangle> tnts = vision_mbr.findTNTsMBR();
 				
-				send_env_to_agent(vision, (firstShot)? 1 : 0, 0, 0, pigs.size(), stones.size()
+				send_env_to_agent(vision, (firstShot)? 1 : 0, (firstShot)? 1 : 0, stars, pigs.size(), stones.size()
 						, woods.size(), ices.size(), tnts.size(), aRobot.getBirdTypeOnSling());
 				
 				int size = in.readInt();
@@ -257,8 +258,8 @@ public class NaiveAgent implements Runnable {
 				int target = in.readInt();
 				int high_shot = in.readInt();
 				int tap_time = in.readInt();
-				System.out.format("size=%d, job_id=%d, target=%d, high_shot=%d, tap_time=%d, first_shot=%d\n"
-						, size, job_id, target, high_shot, tap_time, firstShot);
+				System.out.format("size=%d, job_id=%d, target=%d, high_shot=%d, tap_time=%d\n"
+						, size, job_id, target, high_shot, tap_time);
 				
 				Point releasePoint = null;
 				Shot shot = new Shot();

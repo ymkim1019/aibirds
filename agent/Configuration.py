@@ -7,8 +7,7 @@ class Configuration:
         self.LRA = 0.0001  # Learning rate for Actor
         self.LRC = 0.001  # Learning rate for Critic
 
-        self.action_dim = 3  # Angle/R/Tap time
-        self.state_dim = 10  # 2D input state
+        self.action_dim = 3  # target/high_low/Tap time
         self.EXPLORE = 100000.
         self.episode_count = 2000
         self.max_steps = 100000

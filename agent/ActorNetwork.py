@@ -19,8 +19,10 @@ class ActorNetwork(object):
         K.set_session(sess)
 
         #Now create the model
-        self.model , self.weights, self.state = self.create_actor_network()
-        self.target_model, self.target_weights, self.target_state = self.create_actor_network()
+        self.model , self.weights, self.state, self.input_2d, self.input_num_objects, self.input_bird \
+            = self.create_actor_network()
+        self.target_model, self.target_weights, self.target_state, self.target_input_2d\
+            , self.target_input_num_objects, self.target_input_bird = self.create_actor_network()
         self.action_gradient = tf.placeholder(tf.float32, [None, 3])
         self.params_grad = tf.gradients(self.model.output, self.weights, -self.action_gradient)
         grads = zip(self.params_grad, self.weights)
@@ -29,7 +31,9 @@ class ActorNetwork(object):
 
     def train(self, states, action_grads):
         self.sess.run(self.optimize, feed_dict={
-            self.state: states,
+            self.input_2d: states[0],
+            self.input_num_objects: states[1],
+            self.input_bird: states[2],
             self.action_gradient: action_grads
         })
 
@@ -41,7 +45,7 @@ class ActorNetwork(object):
         self.target_model.set_weights(actor_target_weights)
 
     def create_actor_network(self):
-        print("Now we build the model..actor network")
+        print("Building actor network...")
 
         # inputs
         input_2d = Input(shape=(globalConfig.FRAME_WIDTH, globalConfig.FRAME_HEIGHT, globalConfig.CHANNELS)) # 2d
@@ -75,7 +79,7 @@ class ActorNetwork(object):
         V = concatenate([target, high_shot, tap], axis=-1)
         model = Model(S, V)
 
-        return model, model.trainable_weights, S
+        return model, model.trainable_weights, S, input_2d, input_num_objects, input_bird
 
 
 if __name__ == "__main__":

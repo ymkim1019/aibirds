@@ -22,26 +22,30 @@ class CriticNetwork(object):
         K.set_session(sess)
 
         #Now create the model
-        self.model, self.action, self.state = self.create_critic_network()
-        self.target_model, self.target_action, self.target_state = self.create_critic_network()
-        self.action_grads = tf.gradients(self.model.output, self.action)  #GRADIENTS for policy update
+        self.model, self.action, self.state, self.input_2d, self.input_num_objects, self.input_bird \
+            = self.create_critic_network()
+        self.target_model, self.target_action, self.target_state, self.target_input_2d, self.target_input_num_objects\
+            , self.target_input_bird = self.create_critic_network()
+        self.action_grads = tf.gradients(self.model.output, self.action)
         self.sess.run(tf.initialize_all_variables())
 
     def gradients(self, states, actions):
         return self.sess.run(self.action_grads, feed_dict={
-            self.state: states,
+            self.input_2d: states[0],
+            self.input_num_objects: states[1],
+            self.input_bird: states[2],
             self.action: actions
         })[0]
 
     def target_train(self):
         critic_weights = self.model.get_weights()
         critic_target_weights = self.target_model.get_weights()
-        for i in xrange(len(critic_weights)):
-            critic_target_weights[i] = self.TAU * critic_weights[i] + (1 - self.TAU)* critic_target_weights[i]
+        for i in range(len(critic_weights)):
+            critic_target_weights[i] = self.TAU * critic_weights[i] + (1 - self.TAU) * critic_target_weights[i]
         self.target_model.set_weights(critic_target_weights)
 
     def create_critic_network(self):
-        print("Now we build the model")
+        print("Building critic network....")
 
         # inputs
         input_2d = Input(shape=(globalConfig.FRAME_WIDTH, globalConfig.FRAME_HEIGHT, 1)) # 2d
@@ -63,14 +67,14 @@ class CriticNetwork(object):
         fc_input = concatenate([conv_out, input_num_objects, input_bird, A], axis=-1)
         x = Dense(512, activation='relu')(fc_input)
         x = Dense(512, activation='relu')(x)
-        V = Dense(1, activation='linear')(x)
+        V = Dense(globalConfig.action_dim, activation='linear')(x)
 
         S = [input_2d, input_num_objects, input_bird]
         model_input = S + [A]
         model = Model(inputs=model_input, outputs=V)
         adam = Adam(lr=self.LEARNING_RATE)
         model.compile(loss='mse', optimizer=adam)
-        return model, A, S
+        return model, A, S, input_2d, input_num_objects, input_bird
 
 if __name__ == "__main__":
     config = tf.ConfigProto()
@@ -95,3 +99,4 @@ if __name__ == "__main__":
     q_s_a = critic.model.predict([pixels, num_objects, input_bird, a_t])
 
     print(q_s_a)
+

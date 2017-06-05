@@ -8,7 +8,7 @@ class EventTask(QThread):
         super(EventTask, self).__init__()
 
         self.name = name
-        self.verbose = 1
+        self.verbose = 0
         self.job_queue = list()
 
     def connect_signal(self):
@@ -30,7 +30,7 @@ class EventTask(QThread):
 
         while True:
             if len(self.job_queue) > 0:
-                print("pop")
+                # print("pop")
                 obj = self.job_queue.pop(0)
                 self.job_arrived.emit(obj)
                 self.msleep(10)
