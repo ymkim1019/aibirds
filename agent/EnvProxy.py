@@ -2,7 +2,6 @@ import struct
 import copy
 from PyQt5.QtCore import QThread, pyqtSignal
 
-
 class ComThread(QThread):
     data_send_requested = pyqtSignal()
 
