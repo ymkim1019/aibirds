@@ -1,12 +1,16 @@
 import struct
 import copy
 from PyQt5.QtCore import QThread, pyqtSignal
+from Agent import Agent
+from Configuration import globalConfig
+from Observe import Observe
 
-class ComThread(QThread):
+
+class EnvProxy(QThread):
     data_send_requested = pyqtSignal()
 
     def __init__(self, ip, port, conn, agent):
-        super(ComThread, self).__init__()
+        super(EnvProxy, self).__init__()
 
         self.ip = ip
         self.port = port
@@ -17,6 +21,9 @@ class ComThread(QThread):
 
         if self.verbose:
             print("[+] New server socket thread started for " + ip + ":" + str(port))
+
+    def get_client_ip(self):
+        return self.ip
 
     def connect_signal(self):
         self.data_send_requested.connect(self.on_data_send_requested)
@@ -31,10 +38,14 @@ class ComThread(QThread):
                 print(e)
                 self.exit(0)
 
+    def execute(self, tap_time):
+        data = struct.pack("!i", tap_time)
+        self.send_data(Agent.ACT, data)
+
     def send_data(self, job_id, data):
         print("send_data..")
-        buf = struct.pack("i", job_id) + data
-        size = struct.pack("i", len(buf))
+        buf = struct.pack("!i", job_id) + data
+        size = struct.pack("!i", len(buf))
 
         self.sock_conn.send(size+buf)
 
@@ -68,7 +79,11 @@ class ComThread(QThread):
             if self.verbose:
                 print(str.format("Server received data from {}:{}", self.ip, self.port))
 
-            self.agent.add_job(job_id, copied_data, self)
+            if job_id == Agent.OBSERVE:
+                ob = Observe(copied_data)
+                self.agent.add_job(job_id, ob, self)
+            else:
+                self.agent.add_job(job_id, copied_data, self)
 
 
 

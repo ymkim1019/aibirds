@@ -14,6 +14,7 @@ class Observe:
         birds_seq = []
         for i in range(globalConfig.MAX_BIRDS_NUM):
             birds_seq.append(struct.unpack("!i", data[i*4:(i+1)*4])[0])
+        print(birds_seq)
         return birds_seq
 
     def __get_image(self, data):

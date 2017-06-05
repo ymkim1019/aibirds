@@ -2,7 +2,8 @@ import sys
 import socket
 from PyQt5.QtWidgets import QApplication
 from Agent import Agent
-from ComThread import ComThread
+from EnvProxy import EnvProxy
+
 
 def main():
     # Multithreaded Python server : TCP Server Socket Program Stub
@@ -27,10 +28,10 @@ def main():
         tcpServer.listen(4)
         print("Multi-threaded Python server : Waiting for connections from TCP clients...")
         (conn, (ip, port)) = tcpServer.accept()
-        new_thread = ComThread(ip, port, conn, agent_thread)
-        new_thread.moveToThread(new_thread)
-        new_thread.connect_signal()
-        new_thread.start()
+        new_proxy = EnvProxy(ip, port, conn, agent_thread)
+        new_proxy.moveToThread(new_proxy)
+        new_proxy.connect_signal()
+        new_proxy.start()
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
