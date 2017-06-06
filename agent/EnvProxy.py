@@ -88,8 +88,9 @@ class EnvProxy(QThread):
                 n_ices = struct.unpack("!i", copied_data[24:28])[0]
                 n_tnts = struct.unpack("!i", copied_data[28:32])[0]
                 bird_type = struct.unpack("!i", copied_data[32:36])[0]
+                current_level = struct.unpack("!i", copied_data[36:40])[0]
                 fake_file = io.BytesIO()
-                fake_file.write(copied_data[36:])
+                fake_file.write(copied_data[40:])
                 im = Image.open(fake_file)
                 im = im.resize((globalConfig.FRAME_HEIGHT, globalConfig.FRAME_WIDTH))
                 # im.show()
@@ -106,7 +107,7 @@ class EnvProxy(QThread):
                     r += (self.last_n_pigs - n_pigs) * 2
 
                 self.last_n_pigs = n_pigs
-                ob = (is_first_shot, done, n_pigs, n_stones, n_woods, n_ices, n_tnts, bird_type, im, r)
+                ob = (is_first_shot, done, n_pigs, n_stones, n_woods, n_ices, n_tnts, bird_type, im, r, current_level)
                 self.agent.add_job(job_id, ob, self)
             else:
                 self.agent.add_job(job_id, copied_data, self)

@@ -85,8 +85,9 @@ public class NaiveAgent implements Runnable {
 	public void run() {
 		// 2017-04-01 : ymkim1019
 		try {
+			System.out.format("Connecting to the Agent..%s:%d\n", agent_ip, agent_port);
 			so = new Socket(agent_ip, agent_port);
-			System.out.println("Connected to the Agent..");
+			System.out.format("Connected..\n");
 			in = new DataInputStream(so.getInputStream());
 			out = new DataOutputStream(so.getOutputStream());
 		} catch (Exception e) {
@@ -186,7 +187,7 @@ public class NaiveAgent implements Runnable {
 		byte[] imageInByte=baos.toByteArray();
 		baos.close();
 		
-		out.writeInt(4 * 10 + baos.size());
+		out.writeInt(4 * 11 + baos.size());
 		out.writeInt(EnvToAgentJobId.OBSERVE.ordinal()); // Job ID
 		out.writeInt(first_shot); // first shot
 		out.writeInt(done); // done
@@ -197,6 +198,7 @@ public class NaiveAgent implements Runnable {
 		out.writeInt(n_ices); // # of ice blocks
 		out.writeInt(n_tnts); // # of TNTs
 		out.writeInt(bird_type.id-3); // bird type on the sling
+		out.writeInt(currentLevel); // level
 		out.write(imageInByte);
 		out.flush();
 		
@@ -251,18 +253,18 @@ public class NaiveAgent implements Runnable {
 				List<Rectangle> woods = vision_mbr.findWoodMBR();
 				List<Rectangle> ices = vision_mbr.findIceMBR();
 				List<Rectangle> tnts = vision_mbr.findTNTsMBR();
-				
+								
 				// sort
 				Comparator<Rectangle> comp = new Comparator<Rectangle>() {
 				      @Override
 				      public int compare(final Rectangle object1, final Rectangle object2) {
 				    	  if (object1.getX() == object2.getX())
-				    	  {
-				    		  return object1.getY() > object2.getY() ? 1 : 0;
+				    	  { 	
+				    		  return (int) (Math.round(object1.getY()) - Math.round(object2.getY()));
 				    	  }
 				    	  else
 				    	  {
-				    		  return object1.getX() > object2.getX() ? 1 : 0;
+				    		  return (int) (Math.round(object1.getX()) - Math.round(object2.getX()));
 				    	  }
 				      }
 				};

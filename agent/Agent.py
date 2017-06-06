@@ -63,8 +63,8 @@ class Agent(EventTask):
         with self.graph.as_default():
             if job_id == self.OBSERVE:
                 # observation
-                is_first_shot, done, n_pigs, n_stones, n_woods, n_ices, n_tnts, bird_type, im, r_t = data
-                print(str.format("----> observation from {}", env_proxy.get_client_ip()))
+                is_first_shot, done, n_pigs, n_stones, n_woods, n_ices, n_tnts, bird_type, im, r_t, current_level = data
+                print(str.format("----> observation from {}, level = {}", env_proxy.get_client_ip(), current_level))
                 print(str.format("first shot:{}, reward:{}, episode done:{}", is_first_shot, r_t, done))
                 print(str.format("# pigs={}, # stones={}, # woods={}, # ices={}, n_tnts={}, bird={}"
                                  , n_pigs, n_stones, n_woods, n_ices, n_tnts, bird_type))
@@ -131,11 +131,34 @@ class Agent(EventTask):
                 # print(pixels.shape, num_objects.shape, input_bird.shape)
 
                 a_t = self.actor.model.predict([pixels, num_objects, input_bird])
-                target = math.floor(a_t[0][0] * np.sum(s_t[1] - 0.00001)) # avoid index out of range error
+
+                target = math.floor(a_t[0][0] * np.sum(s_t[1] - 0.00001))  # avoid index out of range error
                 high_shot = 1 if a_t[0][1] > 0.5 else 0
                 tap_time = math.floor(65 + a_t[0][2] * 25)
-                print('raw a_t =', a_t)
-                print(str.format("next action: target({}), high_shot({}), tap time({})", target, high_shot, tap_time))
+                print('raw a_t w/o noise=', a_t)
+                print(str.format("next action w/o noise: target({}), high_shot({}), tap time({})", target, high_shot, tap_time))
+
+                if self.trainable == 1:
+                    # random noise
+                    noise1 = np.random.randn(1) * 0.2
+                    noise2 = np.random.randn(1) * 0.3
+                    noise3 = np.random.randn(1) * 0.2
+                    print('random noise=', noise1, noise2, noise3)
+                    a_t[0][0] += noise1
+                    a_t[0][1] += noise2
+                    a_t[0][2] += noise3
+                    a_t[0][0] = min(1, a_t[0][0])
+                    a_t[0][0] = max(0, a_t[0][0])
+                    a_t[0][1] = min(1, a_t[0][1])
+                    a_t[0][1] = max(0, a_t[0][1])
+                    a_t[0][2] = min(1, a_t[0][2])
+                    a_t[0][2] = max(0, a_t[0][2])
+
+                    target = math.floor(a_t[0][0] * np.sum(s_t[1] - 0.00001)) # avoid index out of range error
+                    high_shot = 1 if a_t[0][1] > 0.5 else 0
+                    tap_time = math.floor(65 + a_t[0][2] * 25)
+                    print('raw a_t w/ noise =', a_t)
+                    print(str.format("next action w/ noise: target({}), high_shot({}), tap time({})", target, high_shot, tap_time))
 
                 # cache
                 self.state_cache[env_proxy] = s_t
@@ -147,7 +170,7 @@ class Agent(EventTask):
                 self.cnt += 1
                 if self.cnt % globalConfig.model_save_interval == 0:
                     if self.trainable:
-                        print("Saving mode....")
+                        print("Saving model....")
                         self.actor.model.save_weights("actormodel.h5", overwrite=True)
                         with open("actormodel.json", "w") as outfile:
                             json.dump(self.actor.model.to_json(), outfile)
