@@ -256,23 +256,32 @@ public class VisionRealShape
 	}	
        
     
-    // 2017-05-19 : jyham
+    // 2017-06-06 : jyham cut the right space
     public BufferedImage drawFillObjects()
     {   
         BufferedImage image = new BufferedImage(_width, _height, BufferedImage.TYPE_INT_RGB);
         Graphics2D g = image.createGraphics();
         g.setFont(new Font("TimesRoman", Font.PLAIN, 10));
-        
+        boolean cutRight = false;
         // draw ground level
         for (int x = 0; x < _width; x++)
         {
             image.setRGB(x, _ground, 0xff0000);
         }
         
+        for (Body b : _drawShape){
+        	if (b!= null){
+        		if (b.centerY < 110.0) cutRight = true;
+        	}
+        }
+        
         for (Body b : _drawShape)
         {
         	if (b != null){
-        		b.draw(g, true, Color.RED);
+        		if (cutRight){
+        			if (b.centerX < 650) b.draw(g, true, Color.RED);
+        		}
+        		else b.draw(g, true, Color.RED);
         		/*
         		g.setColor(Color.black);
         		if(b.id != unassigned)
