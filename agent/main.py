@@ -9,6 +9,7 @@ def main():
     # command-line arguments
     parser = argparse.ArgumentParser()
     parser.add_argument("-trainable", "--trainable", default=1, type=int)
+    parser.add_argument("-load_model", "--load_model", default=1, type=int)
 
     args = parser.parse_args()
     print(args)
@@ -21,7 +22,7 @@ def main():
     tcpServer.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     tcpServer.bind((TCP_IP, TCP_PORT))
 
-    agent_thread = Agent(trainable=args.trainable)
+    agent_thread = Agent(trainable=args.trainable, load_model = args.load_model)
     agent_thread.moveToThread(agent_thread)
     agent_thread.connect_signal()
     agent_thread.start()

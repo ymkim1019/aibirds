@@ -18,7 +18,7 @@ class Agent(EventTask):
     # AGENT -> ENV
     ACT = 0
 
-    def __init__(self, trainable=1):
+    def __init__(self, trainable=1, load_model=1):
         super(Agent, self).__init__('Agent')
 
         np.random.seed(1337)
@@ -40,16 +40,17 @@ class Agent(EventTask):
         self.buff = ReplayBuffer(globalConfig.BUFFER_SIZE)  # Create replay buffer
         self.cnt = 0
 
-        # Now load the weight
-        print("Now we load the weight")
-        try:
-            self.actor.model.load_weights("actormodel.h5")
-            self.critic.model.load_weights("criticmodel.h5")
-            self.actor.target_model.load_weights("actormodel.h5")
-            self.critic.target_model.load_weights("criticmodel.h5")
-            print("Weight load successfully")
-        except:
-            print("Cannot find the weight")
+        if load_model == 1:
+            # Now load the weight
+            print("Now we load the weight")
+            try:
+                self.actor.model.load_weights("actormodel.h5")
+                self.critic.model.load_weights("criticmodel.h5")
+                self.actor.target_model.load_weights("actormodel.h5")
+                self.critic.target_model.load_weights("criticmodel.h5")
+                print("Weight load successfully")
+            except:
+                print("Cannot find the weight")
 
         self.graph = tf.get_default_graph()
 
@@ -130,7 +131,7 @@ class Agent(EventTask):
                 # print(pixels.shape, num_objects.shape, input_bird.shape)
 
                 a_t = self.actor.model.predict([pixels, num_objects, input_bird])
-                target = math.floor(a_t[0][0] * np.sum(s_t[1]))
+                target = math.floor(a_t[0][0] * np.sum(s_t[1] - 0.00001)) # avoid index out of range error
                 high_shot = 1 if a_t[0][1] > 0.5 else 0
                 tap_time = math.floor(65 + a_t[0][2] * 25)
                 print('raw a_t =', a_t)
