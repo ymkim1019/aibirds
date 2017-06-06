@@ -8,6 +8,7 @@ from OU import OU
 from Configuration import globalConfig
 import math
 import keras.backend as K
+import json
 
 
 class Agent(EventTask):
@@ -37,6 +38,7 @@ class Agent(EventTask):
         self.critic = CriticNetwork(self.sess, globalConfig.TAU, globalConfig.LRC)
 
         self.buff = ReplayBuffer(globalConfig.BUFFER_SIZE)  # Create replay buffer
+        self.cnt = 0
 
         # Now load the weight
         print("Now we load the weight")
@@ -140,3 +142,15 @@ class Agent(EventTask):
 
                 # execute an action
                 env_proxy.execute(target, high_shot, tap_time)
+
+                self.cnt += 1
+                if self.cnt % globalConfig.model_save_interval == 0:
+                    if self.trainable:
+                        print("Saving mode....")
+                        self.actor.model.save_weights("actormodel.h5", overwrite=True)
+                        with open("actormodel.json", "w") as outfile:
+                            json.dump(self.actor.model.to_json(), outfile)
+
+                        self.critic.model.save_weights("criticmodel.h5", overwrite=True)
+                        with open("criticmodel.json", "w") as outfile:
+                            json.dump(self.critic.model.to_json(), outfile)

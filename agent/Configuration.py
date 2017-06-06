@@ -22,5 +22,6 @@ class Configuration:
         self.BlueBird = 3 # 6
         self.BlackBird = 4 # 7
         self.WhiteBird = 5 # 8
+        self.model_save_interval = 5
 
 globalConfig = Configuration()
