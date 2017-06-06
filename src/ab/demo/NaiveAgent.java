@@ -16,6 +16,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Collections;
+import java.util.Comparator;
 
 import javax.imageio.ImageIO;
 
@@ -250,6 +252,32 @@ public class NaiveAgent implements Runnable {
 				List<Rectangle> ices = vision_mbr.findIceMBR();
 				List<Rectangle> tnts = vision_mbr.findTNTsMBR();
 				
+				// sort
+				Comparator<Rectangle> comp = new Comparator<Rectangle>() {
+				      @Override
+				      public int compare(final Rectangle object1, final Rectangle object2) {
+				    	  if (object1.getX() == object2.getX())
+				    	  {
+				    		  return object1.getY() > object2.getY() ? 1 : 0;
+				    	  }
+				    	  else
+				    	  {
+				    		  return object1.getX() > object2.getX() ? 1 : 0;
+				    	  }
+				      }
+				};
+				Collections.sort(pigs, comp);
+				Collections.sort(stones, comp);
+				Collections.sort(woods, comp);
+				Collections.sort(ices, comp);
+				Collections.sort(tnts, comp);
+				List<Rectangle> targets = new ArrayList<Rectangle>();
+				targets.addAll(pigs);
+				targets.addAll(stones);
+				targets.addAll(woods);
+				targets.addAll(ices);
+				targets.addAll(tnts);
+				
 				send_env_to_agent(vision, (firstShot)? 1 : 0, (firstShot)? 1 : 0, stars, pigs.size(), stones.size()
 						, woods.size(), ices.size(), tnts.size(), aRobot.getBirdTypeOnSling());
 				
@@ -265,10 +293,16 @@ public class NaiveAgent implements Runnable {
 				Shot shot = new Shot();
 				int dx,dy;
 				{
+					/*
 					// random pick up a pig
 					ABObject pig = pigs.get(randomGenerator.nextInt(pigs.size()));
 					
 					Point _tpt = pig.getCenter();// if the target is very close to before, randomly choose a
+					*/
+					Rectangle targetObj = targets.get(target);
+					Point _tpt = new Point();
+					_tpt.setLocation(Math.round(targetObj.getX()+targetObj.getWidth()/2), Math.round(targetObj.getY()+targetObj.getHeight()/2));
+					
 					// point near it
 					if (prevTarget != null && distance(prevTarget, _tpt) < 10) {
 						double _angle = randomGenerator.nextDouble() * Math.PI * 2;
@@ -285,6 +319,23 @@ public class NaiveAgent implements Runnable {
 					// 2017-04-01 : ymkim1019
 					System.out.println("# of launch points=" + pts.size());
 					
+					if (pts.size() == 1)
+						releasePoint = pts.get(0);
+					else if (pts.size() > 1)
+					{
+						if (high_shot == 1)
+							releasePoint = pts.get(1);
+						else
+							releasePoint = pts.get(0);
+					}
+					else
+					{
+						System.out.println("No release point found for the target");
+						System.out.println("Try a shot with 45 degree");
+						releasePoint = tp.findReleasePoint(sling, Math.PI/4);
+					}
+					
+					/*
 					// do a high shot when entering a level to find an accurate velocity
 					if (firstShot && pts.size() > 1) 
 					{
@@ -308,6 +359,7 @@ public class NaiveAgent implements Runnable {
 							System.out.println("Try a shot with 45 degree");
 							releasePoint = tp.findReleasePoint(sling, Math.PI/4);
 						}
+					*/
 					
 					// Get the reference point
 					Point refPoint = tp.getReferencePoint(sling);
@@ -321,6 +373,9 @@ public class NaiveAgent implements Runnable {
 						System.out.println("Release Angle: "
 								+ Math.toDegrees(releaseAngle));
 						int tapInterval = 0;
+						// 2017-06-06 ymkim1019
+						tapInterval = tap_time;
+						/*
 						switch (aRobot.getBirdTypeOnSling()) 
 						{
 
@@ -337,6 +392,7 @@ public class NaiveAgent implements Runnable {
 						default:
 							tapInterval =  60;
 						}
+						*/
 
 						int tapTime = tp.getTapTime(sling, releasePoint, _tpt, tapInterval);
 						dx = (int)releasePoint.getX() - refPoint.x;
