@@ -261,23 +261,36 @@ public class VisionRealShape
     {   
         BufferedImage image = new BufferedImage(_width, _height, BufferedImage.TYPE_INT_RGB);
         Graphics2D g = image.createGraphics();
-        g.setFont(new Font("TimesRoman", Font.PLAIN, 10));
-        
+        boolean cutRight = false;
+        //g.setFont(new Font("TimesRoman", Font.PLAIN, 10));
         // draw ground level
         for (int x = 0; x < _width; x++)
         {
             image.setRGB(x, _ground, 0xff0000);
         }
         
+        for (Body b : _drawShape){
+        	if (b.centerY < 110.0) cutRight = true;
+        }
+        
         for (Body b : _drawShape)
         {
         	if (b != null){
-        		b.draw(g, true, Color.RED);
+        		
+        		// 2017-06-06 : jyham
+        		
+        		if (cutRight){
+        			if (b.centerX < 650) b.draw(g, true, Color.RED);
+        		}
+        		else b.draw(g,  true, Color.RED);
         		/*
-        		g.setColor(Color.black);
+        		g.setColor(Color.white);
         		if(b.id != unassigned)
         			g.drawString(b.id + "", (int)b.centerX - 5, (int)b.centerY + 5);// 10: font size
+        		
+        		System.out.println(b.id + " " + (int)b.centerX + " " + b.centerY);
         		*/
+        		
         	}
         }
         return image;
