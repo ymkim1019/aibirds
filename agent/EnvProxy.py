@@ -1,13 +1,14 @@
 import struct
 import copy
 from PyQt5.QtCore import QThread, pyqtSignal
+from Agent import Agent
+from Observation import Observation
 
-
-class ComThread(QThread):
+class EnvProxy(QThread):
     data_send_requested = pyqtSignal()
 
     def __init__(self, ip, port, conn, agent):
-        super(ComThread, self).__init__()
+        super(EnvProxy, self).__init__()
 
         self.ip = ip
         self.port = port
@@ -32,10 +33,14 @@ class ComThread(QThread):
                 print(e)
                 self.exit(0)
 
+    def execute(self, tap_time):
+        data = struct.pack("!i", tap_time)
+        self.send_data(Agent.ACT, data)
+
     def send_data(self, job_id, data):
         print("send_data..")
-        buf = struct.pack("i", job_id) + data
-        size = struct.pack("i", len(buf))
+        buf = struct.pack("!i", job_id) + data
+        size = struct.pack("!i", len(buf))
 
         self.sock_conn.send(size+buf)
 
