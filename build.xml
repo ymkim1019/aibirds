@@ -12,7 +12,7 @@
 
     <target name="compile">
         <mkdir dir="src"/>
-	 <javac encoding="UTF-8" srcdir="src" destdir="src" classpathref="classpath"/>
+	 <javac encoding="UTF-8" srcdir="src" destdir="src" debug="on" classpathref="classpath"/>
     </target>  
 
 
@@ -22,7 +22,7 @@
                 <attribute name="Main-Class" value="org.eclipse.jdt.internal.jarinjarloader.JarRsrcLoader"/>
                 <attribute name="Rsrc-Main-Class" value="ab.demo.MainEntry"/>
                 <attribute name="Class-Path" value="."/>
-                <attribute name="Rsrc-Class-Path" value="./ Jama-1.0.2.jar json-simple-1.1.1.jar WebSocket.jar commons-codec-1.7.jar"/>
+                <attribute name="Rsrc-Class-Path" value="./ Jama-1.0.2.jar json-simple-1.1.1.jar WebSocket.jar commons-codec-1.7.jar gson-2.8.1.jar"/>
             </manifest>
             <zipfileset src="external/jar-in-jar-loader.zip"/>
             <fileset dir="src/"/>
@@ -30,6 +30,7 @@
             <zipfileset dir="external" includes="json-simple-1.1.1.jar"/>
             <zipfileset dir="external" includes="WebSocket.jar"/>
             <zipfileset dir="external" includes="commons-codec-1.7.jar"/>
+            <zipfileset dir="external" includes="gson-2.8.1.jar"/>
         </jar>
     </target>
 </project>
