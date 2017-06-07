@@ -18,11 +18,12 @@ public class Preprocessor {
     // detected game objects
     private Rectangle _sling = null;
     private List<ABObject> _birds = null;
+    private List<ABObject> _pigs = null;
     
 	public Preprocessor(BufferedImage rawimg){
 		visionRealShape = new VisionRealShape(rawimg);
 		visionRealShape.findObjects();
-		visionRealShape.findPigs();
+		_pigs = visionRealShape.findPigs();
 		visionRealShape.findHills();
 		_birds = visionRealShape.findBirds();
 		_sling = visionRealShape.findSling();
@@ -80,6 +81,10 @@ public class Preprocessor {
 	
 	public int getGround(){
 		return visionRealShape.getGround();
+	}
+	
+	public int getPigsNum(){
+		return _pigs.size();
 	}
 	
 }

@@ -6,9 +6,9 @@ from Configuration import globalConfig
 
 class Observation:
     def __init__(self, data):
-        split = [4*globalConfig.MAX_BIRDS_SEQ, 4*globalConfig.MAX_BIRDS_SEQ+16]
+        split = [4*globalConfig.MAX_BIRDS_SEQ, 4*globalConfig.MAX_BIRDS_SEQ+24]
         self.birds_seq = self.__get_birds_seq(data[:split[0]])
-        sling_x, sling_y, sling_height, ground = self.__get_sling(data[split[0]:split[1]])
+        sling_x, sling_y, sling_height, ground, self.pigs_num, self.prev_stars = self.__get_sling(data[split[0]:split[1]])
         self.im = self.__get_image(data[split[1]:], sling_x, sling_y, sling_height, ground)
 
     def __get_birds_seq(self, data):
@@ -22,18 +22,16 @@ class Observation:
         y = struct.unpack("!i", data[4:8])[0]
         height = struct.unpack("!i", data[8:12])[0]
         ground = struct.unpack("!i", data[12:16])[0]
-        print(x)
-        print(y)
-        print(height)
-        print(ground)
-        return x, y, height, ground
+        pigs_num = struct.unpack("!i", data[16:20])[0]
+        prev_stars = struct.unpack("!i", data[20:24])[0]
+        return x, y, height, ground, pigs_num, prev_stars
 
     def __get_image(self, data, sling_x, sling_y, sling_height, ground):
         fake_file = io.BytesIO()
         fake_file.write(data)
         im = Image.open(fake_file)
 
-        im.show()
+        #im.show()
         width, height = im.size
 
         scale = globalConfig.STD_SLING_HEIGHT / sling_height
@@ -45,8 +43,8 @@ class Observation:
         sling_y *= scale
         print (im.size)
         new_im = im.crop((sling_x+300, sling_y-150, sling_x+600, sling_y+150))
-        new_im.show()
-        new_im.save('sample.jpg')
+        #new_im.show()
+        #new_im.save('sample.jpg')
         print(new_im.size)
         #im = im.convert('L')
         return im

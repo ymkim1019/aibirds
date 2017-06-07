@@ -23,7 +23,7 @@ class Agent(EventTask):
 
         if job_id == self.OBSERVE:
             ob = Observation(data)
-            print(ob.birds_seq)
+            #print(ob.birds_seq)
 
             # decision notification
             env_proxy.execute(30) # temp implementation

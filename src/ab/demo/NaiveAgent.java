@@ -54,6 +54,9 @@ public class NaiveAgent implements Runnable {
 	private boolean firstShot;
 	private Point prevTarget;
 	
+	private int prevStars;
+	private boolean shouldWriteStars = false;
+	
 	
 	public enum EnvToAgentJobId {
 		FROM_ENV_TO_AGENT_REQUEST_FOR_ACTION;
@@ -113,6 +116,8 @@ public class NaiveAgent implements Runnable {
 				// Update the current stage score and stars
 				int score = StateUtil.getScore(ActionRobot.proxy);
 				int stars = StateUtil.getStars(ActionRobot.proxy);
+				prevStars = stars;
+				shouldWriteStars = true;
 
 				if(!scores.containsKey(currentLevel))
 					scores.put(currentLevel, score);
@@ -181,6 +186,7 @@ public class NaiveAgent implements Runnable {
 		// 2017-06-07 : jyham
 		Rectangle sling = prep.getSling();
 		int ground = prep.getGround();
+		int pigs_num = prep.getPigsNum();
 		
 		System.out.println("send the environments to the agent..");
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -191,7 +197,7 @@ public class NaiveAgent implements Runnable {
 		//out.writeInt(4 + baos.size()); // Job ID + Img
 		
 		// job id, birds sequence, sling position (x, y, height), img 
-		int data_size = 4 + 4*max_birds_num + 4*4 + baos.size();
+		int data_size = 4 + 4*max_birds_num + 4*6 + baos.size();
 		
 		out.writeInt(data_size); // Job ID + birds sequence + Img
 		out.writeInt(EnvToAgentJobId.FROM_ENV_TO_AGENT_REQUEST_FOR_ACTION.ordinal()); // Job ID
@@ -208,6 +214,14 @@ public class NaiveAgent implements Runnable {
 		out.writeInt(sling.y);
 		out.writeInt(sling.height);
 		out.writeInt(ground);
+		out.writeInt(pigs_num);
+		if (shouldWriteStars){
+			out.writeInt(prevStars);
+			shouldWriteStars = false;
+		}
+		else{
+			out.writeInt(0);
+		}
 		
 		out.write(imageInByte);
 		out.flush();
