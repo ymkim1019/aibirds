@@ -24,8 +24,7 @@ class Agent(EventTask):
         if job_id == self.OBSERVE:
             ob = Observation(data)
             print(ob.birds_seq)
-            if globalConfig.SHOW:
-                ob.im.show()
 
             # decision notification
-            env_proxy.execute(1234) # temp implementation
+            env_proxy.execute(30) # temp implementation
+

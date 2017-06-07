@@ -74,4 +74,12 @@ public class Preprocessor {
 		}
 		return visionRealShape.drawFillObjects();
 	}
+	public Rectangle getSling(){
+		return _sling;
+	}
+	
+	public int getGround(){
+		return visionRealShape.getGround();
+	}
+	
 }

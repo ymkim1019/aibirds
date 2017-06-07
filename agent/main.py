@@ -3,6 +3,7 @@ import socket
 from PyQt5.QtWidgets import QApplication
 from Agent import Agent
 from EnvProxy import EnvProxy
+from Configuration import globalConfig
 
 def main():
     # Multithreaded Python server : TCP Server Socket Program Stub
@@ -13,7 +14,14 @@ def main():
     tcpServer.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     tcpServer.bind((TCP_IP, TCP_PORT))
 
-    agent_thread = Agent()
+    if globalConfig.AGENT_TYPE == 'DDPG':
+        from DDPGAgent import DDPGAgent
+        agent_thread = DDPGAgent()
+    elif globalConfig.AGENT_TYPE == 'DQN':
+        from DQNAgent import DQNAgent
+        agent_thread = DQNAgent()
+    else:
+        agent_thread = Agent()
     agent_thread.moveToThread(agent_thread)
     agent_thread.connect_signal()
     agent_thread.start()

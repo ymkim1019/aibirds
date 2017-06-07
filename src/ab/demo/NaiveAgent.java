@@ -93,7 +93,9 @@ public class NaiveAgent implements Runnable {
 		while (true) {
 			GameState state;
 			try {
-				state = solve();
+				// 2017-06-07 jyham
+				state = solve_angle();
+				//state = solve();
 			} catch (IOException e1) {
 				// TODO Auto-generated catch block
 				e1.printStackTrace();
@@ -176,6 +178,10 @@ public class NaiveAgent implements Runnable {
 		ABType[] birds_seq = prep.getBirds();
 		int max_birds_num = 10;
 		
+		// 2017-06-07 : jyham
+		Rectangle sling = prep.getSling();
+		int ground = prep.getGround();
+		
 		System.out.println("send the environments to the agent..");
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		ImageIO.write(imgBuf, "jpg", baos );
@@ -183,8 +189,11 @@ public class NaiveAgent implements Runnable {
 		byte[] imageInByte=baos.toByteArray();
 		baos.close();
 		//out.writeInt(4 + baos.size()); // Job ID + Img
-		// 2017-06-03 : jyham
-		out.writeInt(4 + 4*max_birds_num + baos.size()); // Job ID + birds sequence + Img
+		
+		// job id, birds sequence, sling position (x, y, height), img 
+		int data_size = 4 + 4*max_birds_num + 4*4 + baos.size();
+		
+		out.writeInt(data_size); // Job ID + birds sequence + Img
 		out.writeInt(EnvToAgentJobId.FROM_ENV_TO_AGENT_REQUEST_FOR_ACTION.ordinal()); // Job ID
 		
 		for (int i = 0; i < max_birds_num ; i++){
@@ -195,9 +204,111 @@ public class NaiveAgent implements Runnable {
 			else out.writeInt(0);
 		} // birds sequence
 		
+		out.writeInt(sling.x);
+		out.writeInt(sling.y);
+		out.writeInt(sling.height);
+		out.writeInt(ground);
+		
 		out.write(imageInByte);
 		out.flush();
 	}
+	
+	
+	public GameState solve_angle() throws IOException
+	{
+		// capture Image
+		BufferedImage screenshot = ActionRobot.doScreenShot();
+		
+		Vision vision = new Vision(screenshot);
+		
+		Rectangle sling = vision.findSlingshotMBR();
+		
+		while(sling == null && aRobot.getState() == GameState.PLAYING){
+			System.out
+			.println("No slingshot detected. Please remove pop up or zoom out");
+			ActionRobot.fullyZoomOut();
+			screenshot = ActionRobot.doScreenShot();
+			vision = new Vision(screenshot);
+			sling = vision.findSlingshotMBR();
+		}
+		
+		List <ABObject> pigs = vision.findPigsMBR();
+		
+		GameState state = aRobot.getState();
+		
+		if (sling != null){
+			if (!pigs.isEmpty()){
+				send_env_to_agent(vision);
+				
+				int size = in.readInt();
+				int job_id = in.readInt();
+				int theta = in.readInt();
+				System.out.format("size=%d, job_id=%d, data=%d\n", size, job_id, theta);
+				
+				double releaseAngle = Math.toRadians(theta);
+				Point releasePoint = null;
+				Shot shot = new Shot();
+				int dx, dy;
+				//Point _tpt = pigs.get(0).getCenter();
+				
+				releasePoint = tp.findReleasePoint(sling, releaseAngle);
+				Point refPoint = tp.getReferencePoint(sling);
+				
+				if (releasePoint != null){
+					double cal_releaseAngle = tp.getReleaseAngle(sling, releasePoint);
+					System.out.println("Release Point: " + releasePoint);
+					System.out.println("Release Angle: "
+							+ Math.toDegrees(cal_releaseAngle));
+					int tapTime = 0;
+					//int tapInterval = 0;
+					//int tapTime = tp.getTapTime(sling, releasePoint, _tpt, tapInterval);
+					dx = (int)releasePoint.getX() - refPoint.x;
+					dy = (int)releasePoint.getY() - refPoint.y;
+					shot = new Shot(refPoint.x, refPoint.y, dx, dy, 0, tapTime);
+				}
+				else{
+					System.err.println("No Release Point Found");
+					return state;
+				}
+				
+				{
+					ActionRobot.fullyZoomOut();
+					screenshot = ActionRobot.doScreenShot();
+					vision = new Vision(screenshot);
+					Rectangle _sling = vision.findSlingshotMBR();
+					if(_sling != null)
+					{
+						double scale_diff = Math.pow((sling.width - _sling.width),2) +  Math.pow((sling.height - _sling.height),2);
+						if(scale_diff < 25)
+						{
+							if(dx < 0)
+							{
+								aRobot.cshoot(shot);
+								state = aRobot.getState();
+								if ( state == GameState.PLAYING )
+								{
+									screenshot = ActionRobot.doScreenShot();
+									vision = new Vision(screenshot);
+									List<Point> traj = vision.findTrajPoints();
+									// 2017-04-01 : ymkim1019
+									// below codes calibrate the trajectory module
+									tp.adjustTrajectory(traj, sling, releasePoint);
+									firstShot = false;
+								}
+							}
+						}
+						else
+							System.out.println("Scale is changed, can not execute the shot, will re-segement the image");
+					}
+					else
+						System.out.println("no sling detected, can not execute the shot, will re-segement the image");
+				}
+			}
+		}
+		
+		return state;
+	}
+	
 	
 	public GameState solve() throws IOException
 	{
@@ -229,6 +340,7 @@ public class NaiveAgent implements Runnable {
 		GameState state = aRobot.getState();
 
 		// if there is a sling, then play, otherwise just skip.
+		
 		if (sling != null) {
 
 			if (!pigs.isEmpty()) {
@@ -243,6 +355,7 @@ public class NaiveAgent implements Runnable {
 				Point releasePoint = null;
 				Shot shot = new Shot();
 				int dx,dy;
+				
 				{
 					// random pick up a pig
 					ABObject pig = pigs.get(randomGenerator.nextInt(pigs.size()));

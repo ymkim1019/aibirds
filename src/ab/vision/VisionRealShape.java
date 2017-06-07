@@ -290,6 +290,11 @@ public class VisionRealShape
         	}
         }
         return image;
+        
+    // 2017-06-07 : jyham
+    }
+    public int getGround(){
+    	return _ground;
     }
     
     
