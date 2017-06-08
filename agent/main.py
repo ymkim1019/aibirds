@@ -6,6 +6,7 @@ from AgentDQN import AgentDQN
 from EnvProxy import EnvProxy
 import argparse
 from Configuration import globalConfig
+from PyQt4.QtCore import QTimer
 
 def main():
     # command-line arguments

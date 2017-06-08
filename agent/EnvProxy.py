@@ -122,9 +122,9 @@ class EnvProxy(QThread):
                         if n_stars == 0:
                             r += -10 # level failed
                         else:
-                            r += n_stars * 3
+                            r += n_stars * 5
                     else:
-                        r += (self.last_n_pigs - n_pigs) * 2 + (self.last_n_ices - n_ices) * 0.5
+                        r += (self.last_n_pigs - n_pigs) * 2 + (self.last_n_ices - n_ices) * 0.1
 
                     self.last_n_pigs = n_pigs
                     self.last_n_ices = n_ices

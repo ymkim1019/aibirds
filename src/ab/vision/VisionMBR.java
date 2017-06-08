@@ -1148,12 +1148,12 @@ public class VisionMBR {
 		_nHeight = screenshot.getHeight();
 		_nWidth = screenshot.getWidth();
 		if ((_nHeight != 480) && (_nWidth != 840)) {
-			System.err.println("ERROR: expecting 840-by-480 image..resize...");
-//			System.exit(1);
-			screenshot = resize(screenshot, 840, 480);
-			_nHeight = screenshot.getHeight();
-			_nWidth = screenshot.getWidth();
-			System.out.format("after resize %d, %d\n", _nWidth, _nHeight);
+			System.err.println("ERROR: expecting 840-by-480 image.." + _nWidth + "," + _nHeight);
+			System.exit(1);
+//			screenshot = resize(screenshot, 840, 480);
+//			_nHeight = screenshot.getHeight();
+//			_nWidth = screenshot.getWidth();
+//			System.out.format("after resize %d, %d\n", _nWidth, _nHeight);
 		}
 
 		// quantize to 3-bit colour

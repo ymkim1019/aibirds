@@ -8,7 +8,7 @@ import keras.backend as K
 import json
 from Configuration import globalConfig
 from PyQt4.QtCore import QTimer
-
+import pickle
 
 class AgentDQN(EventTask):
     # ENV -> AGENT
@@ -36,6 +36,7 @@ class AgentDQN(EventTask):
         K.set_session(self.sess)
 
         self.network = QvalueNetwork(self.sess, globalConfig.TAU, globalConfig.LRC)
+
         self.buff = ReplayBuffer(globalConfig.BUFFER_SIZE)  # Create replay buffer
         self.cnt = 0
 
@@ -80,9 +81,8 @@ class AgentDQN(EventTask):
     #     print('--------------------------------------')
 
     def replay(self):
-        print('replay')
         if self.buff.count() > 0 and self.trainable == 1:
-            print("Do the batch update...")
+            print("Do the batch update...# of experiences =", self.buff.count())
 
             # (self.state_cache[env_proxy], self.action_cache[env_proxy], r_t, s_t1, new_actions, done)
 
@@ -136,9 +136,9 @@ class AgentDQN(EventTask):
                 print('loss =', self.network.model.train_on_batch(states + [a_t], y_t))
                 self.network.target_train()
 
-    def run(self):
-        self.start_timer()
-        super(AgentDQN, self).run()
+    # def run(self):
+    #     self.start_timer()
+    #     super(AgentDQN, self).run()
 
     def do_job(self, job_obj):
         (job_id, data, env_proxy) = job_obj
@@ -162,7 +162,7 @@ class AgentDQN(EventTask):
                         np.array([sling_x, sling_y])]
 
                 # replay
-                self.replay()
+                # self.replay()
 
                 # select action a_t
                 s_t = s_t1
@@ -183,7 +183,13 @@ class AgentDQN(EventTask):
                 target_q_values = self.network.target_model.predict(states + [new_actions])
                 sorted_indexes = [k[0] for k in sorted(enumerate(target_q_values), reverse=True, key=lambda x: x[1])]
                 # print(target_q_values[sorted_indexes])
-                if self.trainable == 1 and np.random.rand() < globalConfig.ep_greedy:
+
+                if is_first_shot is True:
+                    epsilon = globalConfig.ep_greedy_first_shot
+                else:
+                    epsilon = globalConfig.ep_greedy
+
+                if self.trainable == 1 and np.random.rand() < epsilon:
                     action_idx = 1 + np.random.randint(len(sorted_indexes)-1)
                     print("randomly select an action except the best one..best_q_value ="
                           , target_q_values[sorted_indexes[0]]
@@ -206,6 +212,7 @@ class AgentDQN(EventTask):
                     self.buff.add_dqn_exp(self.state_cache[env_proxy], self.action_cache[env_proxy], r_t, s_t1
                                   , new_actions, done)
                     print("store transition into replay buffer")
+
                     # print("add trajectory")
                     # self.episode_dict[env_proxy.get_client_ip()].append([self.state_cache[env_proxy], self.action_cache[env_proxy], r_t, s_t1, done])
                     # if done == 1:
@@ -214,7 +221,7 @@ class AgentDQN(EventTask):
                     #     self.print_episode(self.episode_dict[env_proxy.get_client_ip()])
                     #     self.episode_dict.pop(env_proxy.get_client_ip(), None)
                 except Exception as e:
-                    # print(e)
+                    print(e)
                     print("first shot of the game")
                     # self.episode_dict[env_proxy.get_client_ip()] = list()
                     pass

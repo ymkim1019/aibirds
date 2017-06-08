@@ -45,6 +45,8 @@ public class NaiveAgentDQN implements Runnable {
 	private ActionRobot aRobot;
 	private Random randomGenerator;
 	public int currentLevel = 1;
+	public int startLevel = 1;
+	public int endLevel = 21;
 	// 2017-05-07 : ymkim1019
 	public String agent_ip = "127.0.0.1";
 	public int agent_port = 2004;
@@ -55,6 +57,7 @@ public class NaiveAgentDQN implements Runnable {
 	
 	public static int time_limit = 12;
 	private Map<Integer,Integer> scores = new LinkedHashMap<Integer,Integer>();
+	private Map<Integer,Integer> levelStars = new LinkedHashMap<Integer,Integer>();
 	TrajectoryPlanner tp;
 	private boolean firstShot;
 	private Point prevTarget;
@@ -125,15 +128,29 @@ public class NaiveAgentDQN implements Runnable {
 					if(scores.get(currentLevel) < score)
 						scores.put(currentLevel, score);
 				}
+				
+				if(!levelStars.containsKey(currentLevel))
+					levelStars.put(currentLevel, stars);
+				else
+				{
+					if(levelStars.get(currentLevel) < stars)
+						levelStars.put(currentLevel, stars);
+				}
+				
 				int totalScore = 0;
 				for(Integer key: scores.keySet()){
 
 					totalScore += scores.get(key);
 					System.out.println(" Level " + key
-							+ " Score: " + scores.get(key) + " Stars: " + Integer.toString(stars));
+							+ " Score: " + scores.get(key) + " Stars: " + levelStars.get(key));
 				}
 				System.out.println("Total Score: " + totalScore);
-				aRobot.loadLevel(++currentLevel);
+				
+				currentLevel++;
+				if (currentLevel > endLevel)
+					currentLevel = startLevel;
+				
+				aRobot.loadLevel(currentLevel);
 				// make a new trajectory planner whenever a new level is entered
 				tp = new TrajectoryPlanner();
 

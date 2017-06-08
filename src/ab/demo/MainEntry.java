@@ -113,7 +113,7 @@ public class MainEntry {
 
 						}
 						// 2017-06-06 ymkim1019
-						else if (args.length == 4 && (command.equalsIgnoreCase("-na") || command.equalsIgnoreCase("-dqn")))
+						else if (args.length == 5 && (command.equalsIgnoreCase("-na") || command.equalsIgnoreCase("-dqn")))
 						{
 							if (command.equalsIgnoreCase("-na"))
 							{
@@ -145,8 +145,10 @@ public class MainEntry {
 									System.out.println("wrong level number, will use the default one");
 								}
 								na.currentLevel = initialLevel;
-								String ipAddr = args[2];
-								int port = Integer.parseInt(args[3]);
+								na.startLevel = initialLevel;
+								na.endLevel = Integer.parseInt(args[2]);
+								String ipAddr = args[3];
+								int port = Integer.parseInt(args[4]);
 								na.agent_ip = ipAddr;
 								na.agent_port = port;
 								na.run();
