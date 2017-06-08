@@ -149,6 +149,8 @@ class AgentDQN(EventTask):
             if job_id == self.REPLAY:
                 self.replay()
             elif job_id == self.OBSERVE:
+                self.cnt += 1
+
                 # observation
                 is_first_shot, done, n_pigs, n_stones, n_woods, n_ices, n_tnts, bird_type \
                     , sling_x, sling_y, actions, im, r_t, current_level = data
@@ -184,12 +186,15 @@ class AgentDQN(EventTask):
                 sorted_indexes = [k[0] for k in sorted(enumerate(target_q_values), reverse=True, key=lambda x: x[1])]
                 # print(target_q_values[sorted_indexes])
 
-                if is_first_shot is True:
-                    epsilon = globalConfig.ep_greedy_first_shot
-                else:
-                    epsilon = globalConfig.ep_greedy
+                if self.cnt % globalConfig.epsilon_decay_interval == 0:
+                    old = globalConfig.epsilon
+                    globalConfig.epsilon = min(globalConfig.epsilon - globalConfig.epsilon_decay, globalConfig.epsilon_min)
+                    print(str.format('epsilon decay from {} to {}', old, globalConfig.epsilon))
 
-                if self.trainable == 1 and np.random.rand() < epsilon:
+                rand_num = np.random.rand()
+                print('rand_num =', rand_num, ' epsilon =', globalConfig.epsilon)
+
+                if self.trainable == 1 and rand_num < globalConfig.epsilon:
                     action_idx = 1 + np.random.randint(len(sorted_indexes)-1)
                     print("randomly select an action except the best one..best_q_value ="
                           , target_q_values[sorted_indexes[0]]
@@ -233,7 +238,6 @@ class AgentDQN(EventTask):
                 # execute an action
                 env_proxy.execute(target_x, target_y, angle, tap_time)
 
-                self.cnt += 1
                 if self.cnt % globalConfig.model_save_interval == 0:
                     if self.trainable == 1:
                         print("Saving weights....")

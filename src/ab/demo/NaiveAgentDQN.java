@@ -157,7 +157,15 @@ public class NaiveAgentDQN implements Runnable {
 				// first shot on this level, try high shot first
 				firstShot = true;
 			} else if (state == GameState.LOST) {
-				System.out.println("Restart");
+				System.out.println("===========Restart===========");
+				int totalScore = 0;
+				for(Integer key: scores.keySet()){
+
+					totalScore += scores.get(key);
+					System.out.println(" Level " + key
+							+ " Score: " + scores.get(key) + " Stars: " + levelStars.get(key));
+				}
+				System.out.println("Total Score: " + totalScore);
 				aRobot.restartLevel();
 			} else if (state == GameState.LEVEL_SELECTION) {
 				System.out
