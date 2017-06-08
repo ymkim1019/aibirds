@@ -1,4 +1,4 @@
-from PyQt4.QtCore import QThread, pyqtSignal
+from PyQt4.QtCore import QThread, pyqtSignal, QCoreApplication
 
 
 class EventTask(QThread):

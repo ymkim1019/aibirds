@@ -7,11 +7,13 @@ import math
 import keras.backend as K
 import json
 from Configuration import globalConfig
+from PyQt4.QtCore import QTimer
 
 
 class AgentDQN(EventTask):
     # ENV -> AGENT
     OBSERVE = 0
+    REPLAY = 1
 
     # AGENT -> ENV
     ACT = 0
@@ -47,6 +49,19 @@ class AgentDQN(EventTask):
                 print("Cannot find the weight")
 
         self.graph = tf.get_default_graph()
+        self.timer = None
+
+    def start_timer(self):
+        if self.trainable == 1:
+            print('start qtimer')
+            self.timer = QTimer()
+            self.timer.timeout.connect(self.timer_fired)
+            self.timer.start(1000)
+
+    def timer_fired(self):
+        print('timer fired...')
+        self.add_job(self.REPLAY, 0)
+
     #
     # def print_episode(self, episode):
     #     print('---------------episode----------------')
@@ -64,13 +79,76 @@ class AgentDQN(EventTask):
     #               r_t, done))
     #     print('--------------------------------------')
 
+    def replay(self):
+        print('replay')
+        if self.buff.count() > 0 and self.trainable == 1:
+            print("Do the batch update...")
+
+            # (self.state_cache[env_proxy], self.action_cache[env_proxy], r_t, s_t1, new_actions, done)
+
+            # Do the batch update
+            batch = self.buff.getBatch(globalConfig.BATCH_SIZE)
+
+            # s_t
+            images = [e[0][0] for e in batch]
+            num_objects = [e[0][1] for e in batch]
+            birds = [e[0][2] for e in batch]
+            slings = [e[0][3] for e in batch]
+            states = [np.array(images), np.array(num_objects), np.array(birds), np.array(slings)]
+
+            # a_t
+            a_t = np.asarray([e[1] for e in batch])
+
+            # r_t
+            rewards = np.asarray([e[2] for e in batch])
+
+            # s_t1
+            new_images = [e[3][0] for e in batch]
+            new_num_objects = [e[3][1] for e in batch]
+            new_birds = [e[3][2] for e in batch]
+            new_slings = [e[3][3] for e in batch]
+
+            # a_t1
+            a_t1_candidates = [e[4] for e in batch]
+
+            # dones
+            dones = np.asarray([e[5] for e in batch])
+
+            # just placeholder
+            y_t = np.zeros(len(batch))
+            target_q_values = np.zeros(len(batch))
+
+            for i in range(len(batch)):
+                new_states = [np.array([new_images[i]] * len(a_t1_candidates[i]))
+                    , np.array([new_num_objects[i]] * len(a_t1_candidates[i]))
+                    , np.array([new_birds[i]] * len(a_t1_candidates[i]))
+                    , np.array([new_slings[i]] * len(a_t1_candidates[i]))]
+                q_values = self.network.target_model.predict(new_states + [np.array(a_t1_candidates[i])])
+                target_q_values[i] = np.max(q_values)
+
+            for k in range(len(batch)):
+                if dones[k]:
+                    y_t[k] = rewards[k]
+                else:
+                    y_t[k] = rewards[k] + globalConfig.GAMMA * target_q_values[k]
+
+            if self.trainable:
+                print('loss =', self.network.model.train_on_batch(states + [a_t], y_t))
+                self.network.target_train()
+
+    def run(self):
+        self.start_timer()
+        super(AgentDQN, self).run()
+
     def do_job(self, job_obj):
         (job_id, data, env_proxy) = job_obj
         if self.verbose:
             print(str.format("Processing Job id:{}..", job_id))
 
         with self.graph.as_default():
-            if job_id == self.OBSERVE:
+            if job_id == self.REPLAY:
+                self.replay()
+            elif job_id == self.OBSERVE:
                 # observation
                 is_first_shot, done, n_pigs, n_stones, n_woods, n_ices, n_tnts, bird_type \
                     , sling_x, sling_y, actions, im, r_t, current_level = data
@@ -83,60 +161,8 @@ class AgentDQN(EventTask):
                 s_t1 = [np.array(im), np.array([n_pigs, n_stones, n_woods, n_ices, n_tnts]), np.array([bird_type]),
                         np.array([sling_x, sling_y])]
 
-                if self.buff.count() > 0 and self.trainable == 1:
-                    print("Do the batch update...")
-
-                    # (self.state_cache[env_proxy], self.action_cache[env_proxy], r_t, s_t1, new_actions, done)
-
-                    # Do the batch update
-                    batch = self.buff.getBatch(globalConfig.BATCH_SIZE)
-
-                    # s_t
-                    images = [e[0][0] for e in batch]
-                    num_objects = [e[0][1] for e in batch]
-                    birds = [e[0][2] for e in batch]
-                    slings = [e[0][3] for e in batch]
-                    states = [np.array(images), np.array(num_objects), np.array(birds), np.array(slings)]
-
-                    # a_t
-                    a_t = np.asarray([e[1] for e in batch])
-
-                    # r_t
-                    rewards = np.asarray([e[2] for e in batch])
-
-                    # s_t1
-                    new_images = [e[3][0] for e in batch]
-                    new_num_objects = [e[3][1] for e in batch]
-                    new_birds = [e[3][2] for e in batch]
-                    new_slings = [e[3][3] for e in batch]
-
-                    # a_t1
-                    a_t1_candidates = [e[4] for e in batch]
-
-                    # dones
-                    dones = np.asarray([e[5] for e in batch])
-
-                    # just placeholder
-                    y_t = np.zeros(len(batch))
-                    target_q_values = np.zeros(len(batch))
-
-                    for i in range(len(batch)):
-                        new_states = [np.array([new_images[i]]*len(a_t1_candidates[i]))
-                            , np.array([new_num_objects[i]]*len(a_t1_candidates[i]))
-                            , np.array([new_birds[i]]*len(a_t1_candidates[i]))
-                            , np.array([new_slings[i]]*len(a_t1_candidates[i]))]
-                        q_values = self.network.target_model.predict(new_states + [np.array(a_t1_candidates[i])])
-                        target_q_values[i] = np.max(q_values)
-
-                    for k in range(len(batch)):
-                        if dones[k]:
-                            y_t[k] = rewards[k]
-                        else:
-                            y_t[k] = rewards[k] + globalConfig.GAMMA * target_q_values[k]
-
-                    if self.trainable:
-                        print('loss =', self.network.model.train_on_batch(states + [a_t], y_t))
-                        self.network.target_train()
+                # replay
+                self.replay()
 
                 # select action a_t
                 s_t = s_t1

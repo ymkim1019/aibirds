@@ -12,6 +12,8 @@ package ab.vision;
 import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
+import java.awt.Graphics2D;
+import java.awt.Image;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -1128,14 +1130,30 @@ public class VisionMBR {
 		return h;
 	}
 
+	
+	public static BufferedImage resize(BufferedImage img, int newW, int newH) { 
+	    Image tmp = img.getScaledInstance(newW, newH, Image.SCALE_SMOOTH);
+	    BufferedImage dimg = new BufferedImage(newW, newH, BufferedImage.TYPE_INT_ARGB);
+
+	    Graphics2D g2d = dimg.createGraphics();
+	    g2d.drawImage(tmp, 0, 0, null);
+	    g2d.dispose();
+
+	    return dimg;
+	}  
+	
 	// perform preprocessing of a new screenshot
 	private void processScreenShot(BufferedImage screenshot) {
 		// extract width and height
 		_nHeight = screenshot.getHeight();
 		_nWidth = screenshot.getWidth();
 		if ((_nHeight != 480) && (_nWidth != 840)) {
-			System.err.println("ERROR: expecting 840-by-480 image");
-			System.exit(1);
+			System.err.println("ERROR: expecting 840-by-480 image..resize...");
+//			System.exit(1);
+			screenshot = resize(screenshot, 840, 480);
+			_nHeight = screenshot.getHeight();
+			_nWidth = screenshot.getWidth();
+			System.out.format("after resize %d, %d\n", _nWidth, _nHeight);
 		}
 
 		// quantize to 3-bit colour

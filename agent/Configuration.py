@@ -43,6 +43,7 @@ class Configuration:
         ]
         self.target_type_strings = ["pig", "stone", "wood", "ice", "tnt"]
         self.ep_greedy = 0.3
+        self.replay_interval = 1000
 
 
 globalConfig = Configuration()
