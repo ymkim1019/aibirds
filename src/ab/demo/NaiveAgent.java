@@ -147,7 +147,7 @@ public class NaiveAgent implements Runnable {
 							+ " Score: " + scores.get(key));
 				}
 				System.out.println("Total Score: " + totalScore);
-				if(currentLevel<10){
+				if(currentLevel<9){
 					currentLevel++;
 				}
 				else{
@@ -209,7 +209,7 @@ public class NaiveAgent implements Runnable {
 
 	public void save_history(Vision vision,int sling_x,int sling_y, int width, int height,int num_pig, int num_block, int num_bird,int birdtype, int x,int y,int dx,int dy,int taptime) throws IOException
 	{
-		File outputfile = new File(String.format("D:\\angrybird_image\\%d_%d_%d.jpg",currentLevel,episode_num[currentLevel],shot_num));
+		File outputfile = new File(String.format("D:\\angrybird_image\\%d_%d_%d.jpg",currentLevel,episode_num[currentLevel-1],shot_num));
 		Writer jsonfw = new FileWriter(".\\history.json");
 		BufferedImage imgBuf = vision.getImageBuffer();
 		Preprocessor prep = new Preprocessor(imgBuf);
@@ -225,7 +225,7 @@ public class NaiveAgent implements Runnable {
 			episode = history.get(history.size() - 1);
 		}
 
-		List<Integer> transition = new ArrayList<Integer>(Arrays.asList(currentLevel, episode_num[currentLevel], shot_num, sling_x, sling_y, width, height, num_pig, num_block, num_bird, birdtype, x, y, dx, dy, taptime));
+		List<Integer> transition = new ArrayList<Integer>(Arrays.asList(currentLevel, episode_num[currentLevel-1], shot_num, sling_x, sling_y, width, height, num_pig, num_block, num_bird, birdtype, x, y, dx, dy, taptime));
 		episode.add(transition);
 
 
@@ -265,31 +265,17 @@ public class NaiveAgent implements Runnable {
 		}
         // get all the pigs
  		List<ABObject> pigs = vision.findPigsMBR();
-    List<ABObject> blocks = vision.findBlocksMBR();
-    List<ABObject> birds = vision.findBirdsMBR();
-    
-    prevpignum = currentpignum;
-    currentpignum = pigs.size();
-    if(currentpignum == prevpignum){
-    	nohope++;
-    } 
-    else{
-    	nohope =0;
-    }
-    if(nohope == 2){
-    	currentpignum = 0;
-    	nohope=0;
-    	return GameState.LOST;
-    }
+    	List<ABObject> blocks = vision.findBlocksMBR();
+    	List<ABObject> birds = vision.findBirdsMBR();
 
-    if(shot_num == 1){
- 			BufferedImage imgBuf = vision.getImageBuffer();
-			Preprocessor prep = new Preprocessor(imgBuf);
-			imgBuf = prep.drawImage(imgBuf, false);
+   		//  if(shot_num == 1){
+ 		// 	BufferedImage imgBuf = vision.getImageBuffer();
+			// Preprocessor prep = new Preprocessor(imgBuf);
+			// imgBuf = prep.drawImage(imgBuf, false);
 
-			birdTypeArray = prep.getBirds();
- 		}
-    int birdtype;
+			// birdTypeArray = prep.getBirds();
+ 		// }
+    	int birdtype;
 
 		GameState state = aRobot.getState();
 
@@ -377,11 +363,11 @@ public class NaiveAgent implements Runnable {
 						System.out.println("Release Angle: "
 								+ Math.toDegrees(releaseAngle));
 						int tapInterval = 0;
-						// ABType birdtypeT = aRobot.getBirdTypeOnSling();
-						// birdtype = birdtypeT.ordinal();
+						ABType birdtypeT = aRobot.getBirdTypeOnSling();
+						birdtype = birdtypeT.ordinal();
 						
-						birdtype = birdTypeArray[shot_num-1].ordinal();
-						switch (birdTypeArray[shot_num-1]) 
+						//birdtype = birdTypeArray[shot_num-1].ordinal();
+						switch (birdtypeT) 
 						{
 						case RedBird:
 							tapInterval = 0; break;               // start of trajectory
@@ -426,9 +412,22 @@ public class NaiveAgent implements Runnable {
 							{
 								//send_act_to_agent(currentLevel,shot_num,prevTarget.x,prevTarget.y,shot.getDx(),shot.getDy(),shot.getT_tap());
 								if (shot_num == 1){
-									episode_num[currentLevel]++;
+									episode_num[currentLevel-1]++;
 									global_episode++;
 								}
+								prevpignum = currentpignum;
+							    currentpignum = pigs.size();
+							    if(currentpignum == prevpignum){
+							    	nohope++;
+							    } 
+							    else{
+							    	nohope =0;
+							    }
+							    if(nohope == 2){
+							    	currentpignum = -1;
+							    	nohope=0;
+							    	return GameState.LOST;
+							    }
 								save_history(vision,sling.x,sling.y, sling.width, sling.height,pigs.size(), blocks.size(), birds.size(), birdtype, prevTarget.x, prevTarget.y, dx, dy, tapTime);
 								aRobot.cshoot(shot);
 								state = aRobot.getState();
