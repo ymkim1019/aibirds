@@ -18,6 +18,15 @@ class ReplayBuffer(object):
     def size(self):
         return self.buffer_size
 
+    def add_dqn_exp(self, state, action, reward, new_state, new_actions, done):
+        experience = (state, action, reward, new_state, new_actions, done)
+        if self.num_experiences < self.buffer_size:
+            self.buffer.append(experience)
+            self.num_experiences += 1
+        else:
+            self.buffer.popleft()
+            self.buffer.append(experience)
+
     def add(self, state, action, reward, new_state, done):
         experience = (state, action, reward, new_state, done)
         if self.num_experiences < self.buffer_size:

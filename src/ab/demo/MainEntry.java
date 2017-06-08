@@ -21,10 +21,18 @@ public class MainEntry {
 		if(args.length > 0)
 		{
 			command = args[0];
-			if (args.length == 1 && command.equalsIgnoreCase("-na"))
+			if (args.length == 1 && (command.equalsIgnoreCase("-na") || command.equalsIgnoreCase("-dqn")))
 			{
-				NaiveAgent na = new NaiveAgent();
-				na.run();
+				if (command.equalsIgnoreCase("-na"))
+				{
+					NaiveAgent na = new NaiveAgent();
+					na.run();
+				}
+				else
+				{
+					NaiveAgentDQN na = new NaiveAgentDQN();
+					na.run();
+				}
 			}
 			else
 				if(command.equalsIgnoreCase("-cshoot"))
@@ -105,23 +113,44 @@ public class MainEntry {
 
 						}
 						// 2017-06-06 ymkim1019
-						else if (args.length == 4 && command.equalsIgnoreCase("-na"))
+						else if (args.length == 4 && (command.equalsIgnoreCase("-na") || command.equalsIgnoreCase("-dqn")))
 						{
-							NaiveAgent na = new NaiveAgent();
-							int initialLevel = 1;
-							try{
-								initialLevel = Integer.parseInt(args[1]);
-							}
-							catch (NumberFormatException e)
+							if (command.equalsIgnoreCase("-na"))
 							{
-								System.out.println("wrong level number, will use the default one");
+								NaiveAgent na = new NaiveAgent();
+								int initialLevel = 1;
+								try{
+									initialLevel = Integer.parseInt(args[1]);
+								}
+								catch (NumberFormatException e)
+								{
+									System.out.println("wrong level number, will use the default one");
+								}
+								na.currentLevel = initialLevel;
+								String ipAddr = args[2];
+								int port = Integer.parseInt(args[3]);
+								na.agent_ip = ipAddr;
+								na.agent_port = port;
+								na.run();							
 							}
-							na.currentLevel = initialLevel;
-							String ipAddr = args[2];
-							int port = Integer.parseInt(args[3]);
-							na.agent_ip = ipAddr;
-							na.agent_port = port;
-							na.run();
+							else
+							{
+								NaiveAgentDQN na = new NaiveAgentDQN();
+								int initialLevel = 1;
+								try{
+									initialLevel = Integer.parseInt(args[1]);
+								}
+								catch (NumberFormatException e)
+								{
+									System.out.println("wrong level number, will use the default one");
+								}
+								na.currentLevel = initialLevel;
+								String ipAddr = args[2];
+								int port = Integer.parseInt(args[3]);
+								na.agent_ip = ipAddr;
+								na.agent_port = port;
+								na.run();
+							}
 						}
 						else if(command.equalsIgnoreCase("-showMBR"))
 						{
