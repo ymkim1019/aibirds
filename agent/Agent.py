@@ -169,7 +169,7 @@ class Agent(EventTask):
 
                 self.cnt += 1
                 if self.cnt % globalConfig.model_save_interval == 0:
-                    if self.trainable:
+                    if self.trainable == 1:
                         print("Saving model....")
                         self.actor.model.save_weights("actormodel.h5", overwrite=True)
                         with open("actormodel.json", "w") as outfile:

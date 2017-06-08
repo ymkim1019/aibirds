@@ -159,7 +159,11 @@ class AgentDQN(EventTask):
                 # print(target_q_values[sorted_indexes])
                 if self.trainable == 1 and np.random.rand() < globalConfig.ep_greedy:
                     action_idx = 1 + np.random.randint(len(sorted_indexes)-1)
-                else :
+                    print("randomly select an action except the best one..best_q_value ="
+                          , target_q_values[sorted_indexes[0]]
+                          , " chosen q_value =", target_q_values[sorted_indexes[action_idx]])
+                else:
+                    print("choose the best action..q_value =", target_q_values[sorted_indexes[0]])
                     action_idx = 0
                 a_t = new_actions[sorted_indexes[action_idx]]
 
@@ -198,6 +202,6 @@ class AgentDQN(EventTask):
 
                 self.cnt += 1
                 if self.cnt % globalConfig.model_save_interval == 0:
-                    if self.trainable:
+                    if self.trainable == 1:
                         print("Saving weights....")
                         self.network.model.save_weights("dqnmodel.h5", overwrite=True)
