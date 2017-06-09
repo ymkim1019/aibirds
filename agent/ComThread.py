@@ -6,14 +6,15 @@ import queue
 class ComThread(QThread):
     data_send_requested = pyqtSignal()
 
-    def __init__(self, ip, port, conn, agent,queue):
+    def __init__(self, ip, port, conn, agent,state_queue,action_queue):
         super(ComThread, self).__init__()
 
         self.ip = ip
         self.port = port
         self.sock_conn = conn
         self.agent = agent
-        self.queue = queue
+        self.state_queue = state_queue
+        self.action_queue = action_queue
         self.verbose = True
         self.send_buf = list()
 

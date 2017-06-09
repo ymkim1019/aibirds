@@ -4,6 +4,7 @@ import io
 from PIL import Image
 from EventTask import EventTask
 import queue
+import math
 class Agent(EventTask):
     # From the environments to the agent
     FROM_ENV_TO_AGENT_REQUEST_FOR_ACTION = 0
@@ -21,41 +22,27 @@ class Agent(EventTask):
 
         if job_id == self.FROM_ENV_TO_AGENT_REQUEST_FOR_ACTION:
 
-            imagedata = data[:-16]
+            imagedata = data[:-20]
             fake_file = io.BytesIO()
             fake_file.write(imagedata)
             im = Image.open(fake_file)
             im_arr = np.array(im)
             #im.show()
-            im.save("birds.jpg")
+            #im.save("birds.jpg")
 
-            sling_x = int.from_bytes(data[-16:-12], byteorder='big')
-            sling_y = int.from_bytes(data[-12:-8], byteorder='big')
-            sling_width = int.from_bytes(data[-8:-4], byteorder='big')
-            sling_height = int.from_bytes(data[-4:], byteorder='big')
+            sling_x = int.from_bytes(data[-20:-16], byteorder='big')
+            sling_y = int.from_bytes(data[-16:-12], byteorder='big')
+            sling_width = int.from_bytes(data[-12:-8], byteorder='big')
+            sling_height = int.from_bytes(data[-8:-4], byteorder='big')
+            numpigs = int.from_bytes(data[-4:], byteorder='big')
             #struct.unpack('>I',splingdata)
-            print(sling_x,sling_y,sling_width,sling_height)
+            print(sling_x,sling_y,sling_width,sling_height,numpigs)
             # do something..
-            im = im.crop((240,180,840,480))
-            #state.show()
-            im = im.resize((300,150),Image.ANTIALIAS)
-            #state.show()
-            pix = np.array(im)
-            state = np.zeros((150,300))
-            for w in range(300):
-              for h in range(150):
-                pixwh = pix[h][w]
-                if(np.linalg.norm(pixwh-[52,35,19]) <5):#hill
-                  state[h,w] = 1
-                if(np.linalg.norm(pixwh-[160,160,160]) <5):#stone
-                  state[h,w] = 2
-                if(np.linalg.norm(pixwh-[227,143,29]) <5):#wood
-                  state[h,w] = 3
-                if(np.linalg.norm(pixwh-[112,203,247]) <5):#ice
-                  state[h,w] = 4
-                if(np.linalg.norm(pixwh-[95,224,71]) < 5):#pig
-                  state[h,w] = 5
-            com_thread.queue.put(state)
+            com_thread.state_queue.put([im,sling_x,sling_y,sling_width,sling_height])
 
+            action_angle = com_thread.action_queue.get()
+            r = 600
+            dx = round(- r * math.cos(action_angle * math.pi / 180))
+            dy = round(r * math.sin(action_angle * math.pi / 180))
             # decision notification
-            com_thread.send_data(self.FROM_AGENT_TO_ENV_DO_ACTION, struct.pack("iii", -400,400,0)) # temp implementation
+            com_thread.send_data(self.FROM_AGENT_TO_ENV_DO_ACTION, struct.pack("ii", dx,dy)) # temp implementation
