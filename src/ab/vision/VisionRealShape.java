@@ -269,6 +269,8 @@ public class VisionRealShape
             image.setRGB(x, _ground, 0xff0000);
         }
         
+        int leftest_x = 800;
+        
         for (Body b : _drawShape){
         	if (b!= null){
         		if (b.centerY < 110.0) cutRight = true;
@@ -282,11 +284,11 @@ public class VisionRealShape
         			if (b.centerX < 650) b.draw(g, true, Color.RED);
         		}
         		else b.draw(g, true, Color.RED);
-        		/*
-        		g.setColor(Color.black);
+        		
+        		g.setColor(Color.white);
         		if(b.id != unassigned)
         			g.drawString(b.id + "", (int)b.centerX - 5, (int)b.centerY + 5);// 10: font size
-        		*/
+        		
         	}
         }
         return image;

@@ -20,6 +20,9 @@ def main():
     elif globalConfig.AGENT_TYPE == 'DQN':
         from DQNAgent import DQNAgent
         agent_thread = DQNAgent()
+    elif globalConfig.AGENT_TYPE == 'RETRACE':
+        from RetraceAgent import RetraceAgent
+        agent_thread = RetraceAgent()
     else:
         agent_thread = Agent()
     agent_thread.moveToThread(agent_thread)

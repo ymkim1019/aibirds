@@ -56,6 +56,7 @@ public class NaiveAgent implements Runnable {
 	
 	private int prevStars;
 	private boolean shouldWriteStars = false;
+	private boolean prevFail = false;
 	
 	
 	public enum EnvToAgentJobId {
@@ -73,7 +74,7 @@ public class NaiveAgent implements Runnable {
 		tp = new TrajectoryPlanner();
 		prevTarget = null;
 		firstShot = true;
-		randomGenerator = new Random();
+		randomGenerator = new Random(); // should fix random seed ?
 		// --- go to the Poached Eggs episode level selection page ---
 		ActionRobot.GoFromMainMenuToLevelSelection();
 
@@ -134,7 +135,7 @@ public class NaiveAgent implements Runnable {
 							+ " Score: " + scores.get(key) + " Stars: " + Integer.toString(stars));
 				}
 				System.out.println("Total Score: " + totalScore);
-				aRobot.loadLevel(++currentLevel);
+				aRobot.loadLevel(++currentLevel); // TODO: modify here?
 				// make a new trajectory planner whenever a new level is entered
 				tp = new TrajectoryPlanner();
 
@@ -142,6 +143,8 @@ public class NaiveAgent implements Runnable {
 				firstShot = true;
 			} else if (state == GameState.LOST) {
 				System.out.println("Restart");
+				// jyham: to send failure
+				prevFail = true;
 				aRobot.restartLevel();
 			} else if (state == GameState.LEVEL_SELECTION) {
 				System.out
@@ -174,6 +177,8 @@ public class NaiveAgent implements Runnable {
 
 	public void send_env_to_agent(Vision vision) throws IOException
 	{
+		//System.out.println(aRobot.getState());
+		
 		BufferedImage imgBuf = vision.getImageBuffer();
 		// 2017-05-17 : jyham
 		Preprocessor prep = new Preprocessor(imgBuf);
@@ -197,7 +202,7 @@ public class NaiveAgent implements Runnable {
 		//out.writeInt(4 + baos.size()); // Job ID + Img
 		
 		// job id, birds sequence, sling position (x, y, height), img 
-		int data_size = 4 + 4*max_birds_num + 4*6 + baos.size();
+		int data_size = 4 + 4*max_birds_num + 4*7 + baos.size();
 		
 		out.writeInt(data_size); // Job ID + birds sequence + Img
 		out.writeInt(EnvToAgentJobId.FROM_ENV_TO_AGENT_REQUEST_FOR_ACTION.ordinal()); // Job ID
@@ -215,13 +220,22 @@ public class NaiveAgent implements Runnable {
 		out.writeInt(sling.height);
 		out.writeInt(ground);
 		out.writeInt(pigs_num);
+		
 		if (shouldWriteStars){
 			out.writeInt(prevStars);
 			shouldWriteStars = false;
+			prevStars = 0;
+		}
+		else if (prevFail){
+			out.writeInt(-10);
+			prevFail = false;
 		}
 		else{
 			out.writeInt(0);
 		}
+		
+		if(firstShot) out.writeInt(1);
+		else out.writeInt(0);
 		
 		out.write(imageInByte);
 		out.flush();
@@ -232,6 +246,8 @@ public class NaiveAgent implements Runnable {
 	{
 		// capture Image
 		BufferedImage screenshot = ActionRobot.doScreenShot();
+		
+		System.out.println("screen shot size = " + screenshot.getWidth() + "," + screenshot.getHeight());
 		
 		Vision vision = new Vision(screenshot);
 		
@@ -250,8 +266,10 @@ public class NaiveAgent implements Runnable {
 		
 		GameState state = aRobot.getState();
 		
+		
 		if (sling != null){
 			if (!pigs.isEmpty()){
+				
 				send_env_to_agent(vision);
 				
 				int size = in.readInt();
@@ -332,7 +350,7 @@ public class NaiveAgent implements Runnable {
 		
 		// 2017-04-01 : ymkim1019
 		System.out.println("screen shot size = " + screenshot.getWidth() + "," + screenshot.getHeight());
-
+		System.out.println(aRobot.getState());
 		// process image
 		Vision vision = new Vision(screenshot);
 
