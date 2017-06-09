@@ -3,6 +3,7 @@ import socket
 from PyQt4 import QtGui
 from Agent import Agent
 from AgentDQN import AgentDQN
+from AgentDDQN import AgentDDQN
 from EnvProxy import EnvProxy
 import argparse
 from Configuration import globalConfig
@@ -30,6 +31,8 @@ def main():
 
     if args.agent == 'dqn':
         agent_thread = AgentDQN(trainable=args.trainable, load_model=args.load_model)
+    elif args.agent == 'ddqn':
+        agent_thread = AgentDDQN(trainable=args.trainable, load_model=args.load_model)
     else:
         agent_thread = Agent(trainable=args.trainable, load_model=args.load_model)
     agent_thread.moveToThread(agent_thread)

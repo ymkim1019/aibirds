@@ -84,7 +84,7 @@ class EnvProxy(QThread):
                 print(str.format("Server received data from {}:{}, job_id={}", self.ip, self.port, job_id))
 
             if job_id == Agent.OBSERVE:
-                if globalConfig.agent_type == 'dqn':
+                if globalConfig.agent_type == 'dqn' or globalConfig.agent_type == 'ddqn':
                     actions = list();
 
                     is_first_shot = True if struct.unpack("!i", copied_data[0:4])[0] == 1 else False
@@ -122,7 +122,7 @@ class EnvProxy(QThread):
                         if n_stars == 0:
                             r += -10 # level failed
                         else:
-                            r += n_stars * 5
+                            r += n_stars * 5 + self.last_n_pigs * 2
                     else:
                         r += (self.last_n_pigs - n_pigs) * 2 + (self.last_n_ices - n_ices) * 0.1
 

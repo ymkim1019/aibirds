@@ -45,12 +45,15 @@ class AgentDQN(EventTask):
             print("Now we load the weight")
             try:
                 self.network.model.load_weights("dqnmodel.h5")
+                self.network.target_model_model.load_weights("dqnmodel.h5")
                 print("Weight load successfully")
             except:
                 print("Cannot find the weight")
 
         self.graph = tf.get_default_graph()
         self.timer = None
+
+        globalConfig.epsilon = max(globalConfig.epsilon - (self.buff.count() // globalConfig.epsilon_decay_interval) * globalConfig.epsilon_decay, globalConfig.epsilon_min)
 
     def start_timer(self):
         if self.trainable == 1:
@@ -82,6 +85,8 @@ class AgentDQN(EventTask):
 
     def replay(self):
         if self.buff.count() > 0 and self.trainable == 1:
+            self.cnt += 1
+
             print("Do the batch update...# of experiences =", self.buff.count())
 
             # (self.state_cache[env_proxy], self.action_cache[env_proxy], r_t, s_t1, new_actions, done)
@@ -124,7 +129,7 @@ class AgentDQN(EventTask):
                     , np.array([new_birds[i]] * len(a_t1_candidates[i]))
                     , np.array([new_slings[i]] * len(a_t1_candidates[i]))]
                 q_values = self.network.target_model.predict(new_states + [np.array(a_t1_candidates[i])])
-                target_q_values[i] = np.max(q_values)
+                target_q_values[i] = np.max(np.ravel(q_values))
 
             for k in range(len(batch)):
                 if dones[k]:
@@ -132,9 +137,14 @@ class AgentDQN(EventTask):
                 else:
                     y_t[k] = rewards[k] + globalConfig.GAMMA * target_q_values[k]
 
-            if self.trainable:
-                print('loss =', self.network.model.train_on_batch(states + [a_t], y_t))
+            print('loss =', self.network.model.train_on_batch(states + [a_t], y_t))
+
+            if self.cnt % globalConfig.target_update_interval == 0:
+                print("Target train....")
                 self.network.target_train()
+                self.cnt = 0
+                print("Saving weights....")
+                self.network.target_model.save_weights("ddqnmodel.h5", overwrite=True)
 
     # def run(self):
     #     self.start_timer()
@@ -182,13 +192,14 @@ class AgentDQN(EventTask):
                         new_actions.append(np.array([a[0], a[3], tap]))
                         target_coordinates.append([a[1], a[2]])
                 new_actions = np.array(new_actions)
-                target_q_values = self.network.target_model.predict(states + [new_actions])
-                sorted_indexes = [k[0] for k in sorted(enumerate(target_q_values), reverse=True, key=lambda x: x[1])]
+                q_values = self.network.target_model.predict(states + [new_actions])
+                sorted_indexes = [k[0] for k in sorted(enumerate(q_values), reverse=True, key=lambda x: x[1])]
                 # print(target_q_values[sorted_indexes])
 
+                print('cnt=', self.cnt)
                 if self.cnt % globalConfig.epsilon_decay_interval == 0:
                     old = globalConfig.epsilon
-                    globalConfig.epsilon = min(globalConfig.epsilon - globalConfig.epsilon_decay, globalConfig.epsilon_min)
+                    globalConfig.epsilon = max(globalConfig.epsilon - globalConfig.epsilon_decay, globalConfig.epsilon_min)
                     print(str.format('epsilon decay from {} to {}', old, globalConfig.epsilon))
 
                 rand_num = np.random.rand()
@@ -197,10 +208,10 @@ class AgentDQN(EventTask):
                 if self.trainable == 1 and rand_num < globalConfig.epsilon:
                     action_idx = 1 + np.random.randint(len(sorted_indexes)-1)
                     print("randomly select an action except the best one..best_q_value ="
-                          , target_q_values[sorted_indexes[0]]
-                          , " chosen q_value =", target_q_values[sorted_indexes[action_idx]])
+                          , q_values[sorted_indexes[0]]
+                          , " chosen q_value =", q_values[sorted_indexes[action_idx]])
                 else:
-                    print("choose the best action..q_value =", target_q_values[sorted_indexes[0]])
+                    print("choose the best action..q_value =", q_values[sorted_indexes[0]])
                     action_idx = 0
                 a_t = new_actions[sorted_indexes[action_idx]]
 
@@ -237,8 +248,3 @@ class AgentDQN(EventTask):
 
                 # execute an action
                 env_proxy.execute(target_x, target_y, angle, tap_time)
-
-                if self.cnt % globalConfig.model_save_interval == 0:
-                    if self.trainable == 1:
-                        print("Saving weights....")
-                        self.network.model.save_weights("dqnmodel.h5", overwrite=True)

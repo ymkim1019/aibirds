@@ -55,11 +55,12 @@ class QvalueNetwork(object):
         fc_input = concatenate([conv_out, input_num_objects, input_bird, input_sling_pos, A], axis=-1)
         x = Dense(512, activation='relu')(fc_input)
         x = Dense(512, activation='relu')(x)
+        x = Dense(512, activation='relu')(x)
         V = Dense(1, activation='linear')(x)
 
         S = [input_2d, input_num_objects, input_bird, input_sling_pos]
         model_input = S + [A]
         model = Model(inputs=model_input, outputs=V)
-        adam = Adam(lr=self.LEARNING_RATE)
+        adam = Adam(lr=self.LEARNING_RATE, clipvalue=1)
         model.compile(loss='mse', optimizer=adam)
         return model

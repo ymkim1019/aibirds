@@ -5,9 +5,8 @@ class Configuration:
         self.BUFFER_SIZE = 100000
         self.BATCH_SIZE = 32
         self.GAMMA = 0.99
-        self.TAU = 0.001  # Target Network HyperParameters
-        self.LRA = 0.0001  # Learning rate for Actor
-        self.LRC = 0.001  # Learning rate for Critic
+        self.TAU = 1 #0.001  # Target Network HyperParameters
+        self.LRC = 0.0001  # Learning rate
 
         self.action_dim = 3  # target/high_low/Tap time
         self.EXPLORE = 100000.
@@ -24,7 +23,7 @@ class Configuration:
         self.BlueBird = 3 # 6
         self.BlackBird = 4 # 7
         self.WhiteBird = 5 # 8
-        self.model_save_interval = 5
+        self.target_update_interval = 100
 
         self.TARGET_PIG = 0
         self.TARGET_STONE = 1
@@ -46,7 +45,7 @@ class Configuration:
         self.epsilon_min = 0.1
         self.epsilon_decay = 0.01
         self.epsilon_decay_interval = 100
-        self.replay_interval = 1000
+        self.replay_interval = 2000
         self.replay_buf_dump_interval = 20
 
 globalConfig = Configuration()

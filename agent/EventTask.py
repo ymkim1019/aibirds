@@ -1,3 +1,4 @@
+from Configuration import globalConfig
 from PyQt4.QtCore import QThread, pyqtSignal, QCoreApplication
 
 
@@ -29,6 +30,8 @@ class EventTask(QThread):
             print(str.format("task:{} started..", self.name))
 
         cnt = 0
+        sleep_val = 10
+        interval = globalConfig.replay_interval // sleep_val
 
         while True:
             if len(self.job_queue) > 0:
@@ -36,9 +39,9 @@ class EventTask(QThread):
                 obj = self.job_queue.pop(0)
                 self.job_arrived.emit(obj)
 
-            self.msleep(10)
+            self.msleep(sleep_val)
             cnt += 1
-            if cnt % 300 == 0:
+            if cnt % interval == 0:
                 cnt = 0
                 self.add_job(1, 0)
 

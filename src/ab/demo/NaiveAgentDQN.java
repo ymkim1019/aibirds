@@ -120,13 +120,20 @@ public class NaiveAgentDQN implements Runnable {
 				// Update the current stage score and stars
 				int score = StateUtil.getScore(ActionRobot.proxy);
 				stars = StateUtil.getStars(ActionRobot.proxy);
-
+				boolean improved = false;
+				
 				if(!scores.containsKey(currentLevel))
+				{
 					scores.put(currentLevel, score);
+					improved = true;
+				}
 				else
 				{
 					if(scores.get(currentLevel) < score)
+					{
 						scores.put(currentLevel, score);
+						improved = true;
+					}
 				}
 				
 				if(!levelStars.containsKey(currentLevel))
@@ -146,9 +153,12 @@ public class NaiveAgentDQN implements Runnable {
 				}
 				System.out.println("Total Score: " + totalScore);
 				
-				currentLevel++;
-				if (currentLevel > endLevel)
-					currentLevel = startLevel;
+				if (stars > 1)
+				{
+					currentLevel++;
+					if (currentLevel > endLevel)
+						currentLevel = startLevel;
+				}
 				
 				aRobot.loadLevel(currentLevel);
 				// make a new trajectory planner whenever a new level is entered
