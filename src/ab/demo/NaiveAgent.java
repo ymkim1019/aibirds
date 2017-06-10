@@ -51,6 +51,7 @@ public class NaiveAgent implements Runnable {
 	
 	public static int time_limit = 12;
 	private Map<Integer,Integer> scores = new LinkedHashMap<Integer,Integer>();
+	private Map<Integer,Integer> starsmap = new LinkedHashMap<Integer,Integer>();
 	TrajectoryPlanner tp;
 	private boolean firstShot;
 	private Point prevTarget;
@@ -122,19 +123,22 @@ public class NaiveAgent implements Runnable {
 				prevStars = stars;
 				shouldWriteStars = true;
 
-				if(!scores.containsKey(currentLevel))
+				if(!scores.containsKey(currentLevel)){
 					scores.put(currentLevel, score);
+					starsmap.put(currentLevel, stars);
+				}
 				else
 				{
 					if(scores.get(currentLevel) < score)
 						scores.put(currentLevel, score);
+						starsmap.put(currentLevel, stars);
 				}
 				int totalScore = 0;
 				for(Integer key: scores.keySet()){
 
 					totalScore += scores.get(key);
 					System.out.println(" Level " + key
-							+ " Score: " + scores.get(key) + " Stars: " + Integer.toString(stars));
+							+ " Score: " + scores.get(key) + " Stars: " + starsmap.get(key));
 				}
 				System.out.println("Total Score: " + totalScore);
 				aRobot.loadLevel(++currentLevel); // TODO: modify here?

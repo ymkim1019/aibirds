@@ -20,13 +20,12 @@ class RetraceNetwork():
 
         self.GAMMA = 0.9
         self.epsilon = 1.0
-        #self.epsilon = 0.5
-        self.EPSILON_DECAY = 0.9
+        self.EPSILON_DECAY_STEP = 0.001
         self.EPSILON_MIN = 0.01
+        self.LAMBDA = 1.0
 
         self.LEARNING_RATE = 0.001
-        #self.BATCH_SIZE = 32
-        self.BATCH_SIZE = 3
+        self.BATCH_SIZE = 32
         self.epoch = 0
 
         self.P_KEEP_HIDDEN = 0.8
@@ -42,6 +41,8 @@ class RetraceNetwork():
         self.saver = tf.train.Saver()
         self.session = tf.Session()
         self.session.run(tf.global_variables_initializer())
+
+        self.prev_min_cost = 1000000
 
         if load:
             checkpoint = tf.train.get_checkpoint_state(self.SAVE_PATH)
@@ -60,8 +61,8 @@ class RetraceNetwork():
 
     def trainNetwork(self):
         minibatch = self.traj_mem.batch(self.BATCH_SIZE)
-        img_batch = np.array([np.zeros((84,84)) for episode in minibatch for data in episode])  # (None, 84, 84)
-        #img_batch = np.array([data[0] for episode in minibatch for data in episode]) # (None, 84, 84)
+        #img_batch = np.array([np.zeros((84,84)) for episode in minibatch for data in episode])  # (None, 84, 84)
+        img_batch = np.array([data[0] for episode in minibatch for data in episode]) # (None, 84, 84)
         info_batch = np.array([data[1] for episode in minibatch for data in episode]) # (None, 10)
         action_batch = np.array([self.angle2onehot(data[2]) for episode in minibatch for data in episode]) # (None, angle num)
         y_batch = np.array([data for episode in minibatch for data in self.calculate_new_q(episode)]) # (None,)
@@ -72,20 +73,37 @@ class RetraceNetwork():
             self.input_info: info_batch,
             self.input_action: action_batch,
             self.input_y: y_batch})
-        self.saver.save(self.session, self.SAVE_PATH + 'network', global_step=self.epoch)
+
+        if c < self.prev_min_cost:
+            self.saver.save(self.session, self.SAVE_PATH + 'network', global_step=self.epoch)
+            self.prev_min_cost = c
+            print("Saved on epoch %d, cost %f" %(self.epoch, c))
         self.copyNetwork()
         self.epoch += 1
         return c
 
+    def getAction(self, image, info):
+        q_values = self.session.run(self.Q_value, feed_dict={self.input_image:[image], self.input_info:[info]})
+        max_action_index = np.argmax(q_values, axis=1)
+        prob = self.epsilon / self.ANGLE_NUM
+
+        if np.random.random()<=self.epsilon:
+            action_index = np.random.randint(self.ANGLE_NUM)
+        else:
+            action_index = max_action_index
+            prob += (1 - self.epsilon)
+
+        if self.epsilon > self.EPSILON_MIN:
+            self.epsilon -= self.EPSILON_DECAY_STEP
+
+        return action_index, prob
 
     def calculate_new_q(self, episode):
-        #print(episode)
         tot = len(episode)
-        #print(tot)
-        img_batch = np.array([np.zeros((84,84)) for i in range(tot)])
-        #img_batch = np.array([data[0] for data in episode]) # (tot, 84, 84)
+        #img_batch = np.array([np.zeros((84,84)) for i in range(tot)])
+        img_batch = np.array([data[0] for data in episode]) # (tot, 84, 84)
         info_batch = np.array([data[1] for data in episode]) # (tot, info_dim)
-        action_num_batch = np.array([self.angle2num(data[2]) for data in episode]) # (tot, )
+        #action_num_batch = np.array([self.angle2num(data[2]) for data in episode]) # (tot, )
         action_vector_batch = np.array([self.angle2onehot(data[2]) for data in episode]) # (tot, angle_num)
         reward_batch = np.array([data[3] for data in episode]) # (tot, )
         behavior_policy_prob_batch = np.array([data[4] for data in episode]) # (tot, )
@@ -110,14 +128,12 @@ class RetraceNetwork():
 
         cur_policy_action_prob_batch = np.sum(np.multiply(cur_policy_prob_batch, action_vector_batch), axis=1) # (tot,)
         cs_batch = np.divide(cur_policy_action_prob_batch, behavior_policy_prob_batch) # (tot,)
-        cs_batch = self.GAMMA*np.array([np.minimum(1.0, c) for c in cs_batch]) # (tot,)
+        cs_batch = self.LAMBDA*self.GAMMA*np.array([np.minimum(1.0, c) for c in cs_batch]) # (tot,)
         cs_batch = self.multiply_cs(cs_batch) # (tot, tot)
         td_batch = np.tile(td_batch, (tot, 1))
         delta_q_batch = np.sum(np.multiply(cs_batch, td_batch), axis=1) # (tot,)
 
         return np.add(delta_q_batch, actioned_Q_value_batch)
-
-        #return delta_q_batch
 
 
     def multiply_cs(self, cs_batch):
@@ -137,18 +153,6 @@ class RetraceNetwork():
         return np.prod(cs_batch[start+1:end+1])
 
 
-    # def getMaxActionIndex(self, img, info):
-    #     Q_value = self.Q_valueC.eval(feed_dict={self.input_imageC : img, self.input_infoC : info})
-    #     action_index = np.argmax(Q_value)
-    #     return action_index
-    #
-    # def getActionProb(self, img, info):
-    #     max_index = self.getMaxActionIndex(img, info)
-    #     prob = np.ones(self.ANGLE_NUM)*self.epsilon/self.ANGLE_NUM
-    #     prob[max_index] += (1 - self.epsilon)
-    #     return prob
-
-
     def copyNetwork(self):
         self.session.run(self.copyOperation)
 
@@ -157,7 +161,6 @@ class RetraceNetwork():
         input_image = tf.placeholder(tf.float32, [None, self.OBSERVE_SIZE, self.OBSERVE_SIZE]) # (?, 84, 84)
         image_reshape = tf.reshape(input_image,[-1,self.OBSERVE_SIZE,self.OBSERVE_SIZE,1]) # (?, 84, 84, 1)
         input_info = tf.placeholder(tf.float32, [None, self.INFO_DIM]) # (?, 10)
-        #input_action = tf.placeholder(tf.float32, [None, self.ANGLE_NUM]) # (?, action num)
 
         # [height, width, input channel, output channel]
         W_conv1 = self.weight_variable([8, 8, 1, 32])
@@ -221,13 +224,17 @@ class RetraceNetwork():
         vec[self.angle2num(angle)] = 1
         return vec
 
-traj_mem = TrajectoryMemory()
-rn = RetraceNetwork(True, traj_mem)
+# traj_mem = TrajectoryMemory()
+# rn = RetraceNetwork(True, traj_mem)
+# image = np.ones((84,84))
+# info = np.ones(10)
+# index = rn.getAction(image,info)
+# print (index)
 # episode = traj_mem.memory[6]
 # for i in range(10):
 #     c = rn.trainNetwork()
-# print(rn.epoch)
-# print(c)
+    # print (rn.epoch)
+    # print (c)
 
 #print (episode[0])
 #print(rn.calculate_new_q(episode))

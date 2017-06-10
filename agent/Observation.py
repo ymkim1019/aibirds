@@ -11,8 +11,8 @@ class Observation:
         split = [4*globalConfig.MAX_BIRDS_SEQ, 4*globalConfig.MAX_BIRDS_SEQ+28]
         self.birds_seq = self.__get_birds_seq(data[:split[0]])
         sling_x, sling_y, sling_height, ground = self.__get_sling(data[split[0]:split[1]])
-        self.img = [0,0,0]
-        #self.img = self.__get_image(data[split[1]:], sling_x, sling_y, sling_height, ground)
+        #self.img = [0,0,0] # for test
+        self.img = self.__get_image(data[split[1]:], sling_x, sling_y, sling_height, ground)
 
     def __get_birds_seq(self, data):
         birds_seq = []

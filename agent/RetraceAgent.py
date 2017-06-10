@@ -7,6 +7,7 @@ from Observation import Observation
 from Configuration import globalConfig
 from Agent import Agent
 from TrajectoryMemory import TrajectoryMemory
+from RetraceNetwork import RetraceNetwork
 
 class RetraceAgent(Agent):
     # From the environments to the agent
@@ -32,6 +33,8 @@ class RetraceAgent(Agent):
         self.ANGLE_NUM = globalConfig.ANGLE_NUM
         self.ANGLE_STEP = globalConfig.ANGLE_STEP
 
+        self.network = RetraceNetwork(True, self.traj_mem)
+
     def do_job(self, job_obj):
         (job_id, data, env_proxy) = job_obj
         if self.verbose:
@@ -39,9 +42,8 @@ class RetraceAgent(Agent):
 
         if job_id == self.OBSERVE:
             ob = Observation(data)
-            print(ob.prev_stars)
-            action = int(np.random.randint(0, self.ANGLE_NUM)*self.ANGLE_STEP+self.ANGLE_MIN)
-            action_prob = 1/self.ANGLE_NUM
+
+            action, action_prob = self.network.getAction(np.array(ob.img), np.array(ob.birds_seq))
             if ob.birds_seq[0] != 0:
                 prev_reward = - ob.pigs_num
                 if ob.first_shot or ob.prev_stars == -5: # first shot and no hit 반복이면 계속 episode가 생성됨
