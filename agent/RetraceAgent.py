@@ -19,10 +19,11 @@ class RetraceAgent(Agent):
         super(RetraceAgent, self).__init__()
 
         np.random.seed(1)
-        #self.traj_mem = TrajectoryMemory()
+        self.traj_mem = TrajectoryMemory()
         self.prev_img = None
         self.prev_info = None
         self.prev_action = None
+        self.prev_action_prob = None
         self.prev_first = True
 
         self.OBSERVE_SIZE = globalConfig.OBSERVE_SIZE
@@ -38,21 +39,23 @@ class RetraceAgent(Agent):
 
         if job_id == self.OBSERVE:
             ob = Observation(data)
-            #print(ob.birds_seq)
+            print(ob.prev_stars)
             action = int(np.random.randint(0, self.ANGLE_NUM)*self.ANGLE_STEP+self.ANGLE_MIN)
-            # if ob.birds_seq[0] != 0:
-            #     prev_reward = - ob.pigs_num
-            #     if ob.first_shot:
-            #         prev_reward = ob.prev_stars
-            #
-            #     if not self.prev_img == None:
-            #         self.traj_mem.add(self.prev_img, self.prev_info, self.prev_action, prev_reward, self.prev_first, 'epsilon')
-            #
-            #     #print(self.traj_mem.memory)
-            #     self.prev_img = ob.img
-            #     self.prev_info = ob.birds_seq
-            #     self.prev_action = action
-            #     self.prev_first = ob.first_shot
+            action_prob = 1/self.ANGLE_NUM
+            if ob.birds_seq[0] != 0:
+                prev_reward = - ob.pigs_num
+                if ob.first_shot or ob.prev_stars == -5: # first shot and no hit 반복이면 계속 episode가 생성됨
+                    prev_reward = ob.prev_stars
+
+                if not self.prev_img == None:
+                    self.traj_mem.add(self.prev_img, self.prev_info, self.prev_action, prev_reward, self.prev_first, self.prev_action_prob)
+
+                #print(self.traj_mem.memory)
+                self.prev_img = ob.img
+                self.prev_info = ob.birds_seq
+                self.prev_action = action
+                self.prev_action_prob = action_prob
+                self.prev_first = ob.first_shot
             print("action: "+str(action))
             # print('give action '+str(action))
             # decision notification

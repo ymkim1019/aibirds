@@ -9,7 +9,7 @@ class TrajectoryMemory:
         self.total_size = 0
         self.memory = deque()
         self.MAX_SIZE = 1000 # maximum number of episodes
-        self.PATH = 'retrace/memory/'
+        self.PATH = 'retrace/temp2/'
         self.init_load()
         np.random.seed(1)
 
@@ -47,10 +47,9 @@ class TrajectoryMemory:
             self.memory.append(json.loads(f))
             self.size += 1
 
-
-
-
-# tr2 = TrajectoryMemory()
-# print (tr2.memory)
-# print (tr2.size)
-# print (len(tr2.memory))
+    def batch(self, batch_size):
+        if batch_size > self.size:
+            sampled = np.random.shuffle(np.arange(self.size))
+        else:
+            sampled = np.random.randint(0, self.size, batch_size)
+        return [self.memory[i] for i in sampled]

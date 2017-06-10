@@ -51,7 +51,7 @@ class DQNetwork():
         if train:
             self.trainQNetwork()
 
-        self.createTrainingMethod()
+        #self.createTrainingMethod()
 
     def getAction(self):
         Q_value = self.Q_value.eval(feed_dict={self.input_image:[self.currentState]})[0]
