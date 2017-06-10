@@ -90,7 +90,7 @@ class RetraceNetwork():
 
     def getAction(self, image, info, deterministic):
         q_values = self.session.run(self.Q_value, feed_dict={self.input_image:[image], self.input_info:[info]})
-        max_action_index = np.argmax(q_values, axis=1)
+        max_action_index = np.argmax(q_values, axis=1)[0]
         prob = self.epsilon / self.ANGLE_NUM
 
         if deterministic:
