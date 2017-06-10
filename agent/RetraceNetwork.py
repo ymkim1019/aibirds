@@ -82,10 +82,13 @@ class RetraceNetwork():
         self.epoch += 1
         return c
 
-    def getAction(self, image, info):
+    def getAction(self, image, info, deterministic):
         q_values = self.session.run(self.Q_value, feed_dict={self.input_image:[image], self.input_info:[info]})
         max_action_index = np.argmax(q_values, axis=1)
         prob = self.epsilon / self.ANGLE_NUM
+
+        if deterministic:
+            return max_action_index, 1.0
 
         if np.random.random()<=self.epsilon:
             action_index = np.random.randint(self.ANGLE_NUM)

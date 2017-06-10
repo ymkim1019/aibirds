@@ -33,6 +33,8 @@ class RetraceAgent(Agent):
         self.ANGLE_NUM = globalConfig.ANGLE_NUM
         self.ANGLE_STEP = globalConfig.ANGLE_STEP
 
+        self.DETERMINISTIC = False
+
         self.network = RetraceNetwork(True, self.traj_mem)
 
     def do_job(self, job_obj):
@@ -43,7 +45,8 @@ class RetraceAgent(Agent):
         if job_id == self.OBSERVE:
             ob = Observation(data)
 
-            action, action_prob = self.network.getAction(np.array(ob.img), np.array(ob.birds_seq))
+            action, action_prob = self.network.getAction(np.array(ob.img), np.array(ob.birds_seq), self.DETERMINISTIC)
+            action *= self.ANGLE_STEP + self.ANGLE_MIN
             if ob.birds_seq[0] != 0:
                 prev_reward = - ob.pigs_num
                 if ob.first_shot or ob.prev_stars == -5: # first shot and no hit 반복이면 계속 episode가 생성됨
@@ -58,7 +61,7 @@ class RetraceAgent(Agent):
                 self.prev_action = action
                 self.prev_action_prob = action_prob
                 self.prev_first = ob.first_shot
-            print("action: "+str(action))
+            print("action: "+str(action)+" prob: "+str(action_prob))
             # print('give action '+str(action))
             # decision notification
             env_proxy.execute(action) # temp implementation
