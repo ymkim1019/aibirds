@@ -217,9 +217,10 @@ public class NaiveAgentDQN implements Runnable {
 			// estimate the trajectory
 			Point targetPoint = new Point((int)targetList.get(i).getCenterX(), (int)targetList.get(i).getCenterY());
 			ArrayList<Point> pts = tp.estimateLaunchPoint(sling, targetPoint);
-			for (int j=0;j<pts.size();j++) // high and low shot
+//			for (int j=0;j<pts.size();j++) // high and low shot
+			if (true)
 			{
-				Point releasePoint = pts.get(j);
+				Point releasePoint = pts.get(0);
 				double angle = tp.getReleaseAngle(sling, releasePoint);
 				angle = Math.toDegrees(angle);
 //				typeList.add(type);
@@ -367,26 +368,22 @@ public class NaiveAgentDQN implements Runnable {
 				int job_id = in.readInt();
 				int target_x = in.readInt();
 				int target_y = in.readInt();
-				double angle = in.readDouble();
+//				double angle = in.readDouble();
 				int tap_time = in.readInt();
 				
-				System.out.format("size=%d, job_id=%d, target=(%d, %d), angle=%f, tap_time=%d\n"
-						, size, job_id, target_x, target_y, angle, tap_time);
+				System.out.format("size=%d, job_id=%d, x=%d, y=%d, tap_time=%d\n"
+						, size, job_id, target_x, target_y, tap_time);
 				
-				angle = Math.toRadians(angle);
 				
-				Point releasePoint = tp.findReleasePoint(sling, angle);
+				
+				Point targetPoint = new Point(target_x, target_y);
+				ArrayList<Point> pts = tp.estimateLaunchPoint(sling, targetPoint);
+				Point releasePoint = pts.get(0);
 				Shot shot = new Shot();
-			
 				// Get the reference point
 				Point refPoint = tp.getReferencePoint(sling);
-
-				System.out.println("Release Point: " + releasePoint);
-				System.out.println("Release Angle: " + Math.toDegrees(angle));
-				
 				int tapInterval = tap_time;
-				Point _tpt = new Point(target_x, target_y);
-				int tapTime = tp.getTapTime(sling, releasePoint, _tpt, tapInterval);
+				int tapTime = tp.getTapTime(sling, releasePoint, targetPoint, tapInterval);
 				int dx = (int)releasePoint.getX() - refPoint.x;
 				int dy = (int)releasePoint.getY() - refPoint.y;
 				shot = new Shot(refPoint.x, refPoint.y, dx, dy, 0, tapTime);

@@ -41,13 +41,13 @@ class EnvProxy(QThread):
                 print(e)
                 self.exit(0)
 
-    def execute(self, target, high_shot, tap_time):
-        # print('execute ', target, high_shot, tap_time)
-        data = struct.pack("!i", target) + struct.pack("!i", high_shot) + struct.pack("!i", tap_time)
-        self.send_data(Agent.ACT, data)
+    # def execute(self, target, high_shot, tap_time):
+    #     # print('execute ', target, high_shot, tap_time)
+    #     data = struct.pack("!i", target) + struct.pack("!i", high_shot) + struct.pack("!i", tap_time)
+    #     self.send_data(Agent.ACT, data)
 
-    def execute(self, target_x, target_y, angle, tap_time):
-        data = struct.pack("!i", target_x) + struct.pack("!i", target_y) + struct.pack("!d", angle) + struct.pack("!i", tap_time)
+    def execute(self, target_x, target_y, tap_time):
+        data = struct.pack("!i", target_x) + struct.pack("!i", target_y) + struct.pack("!i", tap_time)
         self.send_data(Agent.ACT, data)
 
     def send_data(self, job_id, data):
@@ -108,23 +108,25 @@ class EnvProxy(QThread):
                         angle = struct.unpack("!d", copied_data[start_pos + 12:start_pos + 20])[0]
                         actions.append([target_type, x, y, angle])
 
+                    print("sling =", sling_x, sling_y)
                     fake_file = io.BytesIO()
                     fake_file.write(copied_data[52+n_actions*20:])
                     im = Image.open(fake_file)
-                    im = im.crop((400, 40, 800, 440))
+                    im = im.crop((sling_x+200, sling_y-250, sling_x+600, sling_y+150))
                     im = im.resize((globalConfig.FRAME_WIDTH, globalConfig.FRAME_HEIGHT), Image.NEAREST)
                     # im.show()
-                    im = np.array(im.convert('L'))
-                    im = im[:, :, np.newaxis]
+                    # im = np.array(im.convert('L'))
+                    # im = im[:, :, np.newaxis]
+                    im = np.array(im)
 
-                    r = -1 # one shot
+                    r = -0.1 # one shot
                     if is_first_shot is True:
                         if n_stars == 0:
-                            r += -10 # level failed
+                            r += -1 # level failed
                         else:
-                            r += n_stars * 5 + self.last_n_pigs * 2
+                            r += n_stars * 0.3 + self.last_n_pigs * 0.1
                     else:
-                        r += (self.last_n_pigs - n_pigs) * 2 + (self.last_n_ices - n_ices) * 0.1
+                        r += (self.last_n_pigs - n_pigs) * 0.1
 
                     self.last_n_pigs = n_pigs
                     self.last_n_ices = n_ices

@@ -96,10 +96,8 @@ class AgentDQN(EventTask):
 
             # s_t
             images = [e[0][0] for e in batch]
-            num_objects = [e[0][1] for e in batch]
-            birds = [e[0][2] for e in batch]
-            slings = [e[0][3] for e in batch]
-            states = [np.array(images), np.array(num_objects), np.array(birds), np.array(slings)]
+            birds = [e[0][1] for e in batch]
+            states = [np.array(images), np.array(birds)]
 
             # a_t
             a_t = np.asarray([e[1] for e in batch])
@@ -109,9 +107,7 @@ class AgentDQN(EventTask):
 
             # s_t1
             new_images = [e[3][0] for e in batch]
-            new_num_objects = [e[3][1] for e in batch]
-            new_birds = [e[3][2] for e in batch]
-            new_slings = [e[3][3] for e in batch]
+            new_birds = [e[3][1] for e in batch]
 
             # a_t1
             a_t1_candidates = [e[4] for e in batch]
@@ -125,9 +121,7 @@ class AgentDQN(EventTask):
 
             for i in range(len(batch)):
                 new_states = [np.array([new_images[i]] * len(a_t1_candidates[i]))
-                    , np.array([new_num_objects[i]] * len(a_t1_candidates[i]))
-                    , np.array([new_birds[i]] * len(a_t1_candidates[i]))
-                    , np.array([new_slings[i]] * len(a_t1_candidates[i]))]
+                    , np.array([new_birds[i]] * len(a_t1_candidates[i]))]
                 q_values = self.network.target_model.predict(new_states + [np.array(a_t1_candidates[i])])
                 target_q_values[i] = np.max(np.ravel(q_values))
 
@@ -170,8 +164,7 @@ class AgentDQN(EventTask):
                     "# pigs={}, # stones={}, # woods={}, # ices={}, n_tnts={}, bird={}, sling=({}, {}), n_actions={}"
                     , n_pigs, n_stones, n_woods, n_ices, n_tnts, bird_type, sling_x, sling_y, len(actions)))
                 # print('im shape=', im.shape)
-                s_t1 = [np.array(im), np.array([n_pigs, n_stones, n_woods, n_ices, n_tnts]), np.array([bird_type]),
-                        np.array([sling_x, sling_y])]
+                s_t1 = [np.array(im), np.array([bird_type/4.0])]
 
                 # replay
                 # self.replay()
@@ -179,24 +172,18 @@ class AgentDQN(EventTask):
                 # select action a_t
                 s_t = s_t1
                 pixels = np.array([s_t[0]] * len(actions))
-                num_objects = np.array([s_t[1]] * len(actions))
-                input_bird = np.array([s_t[2]] * len(actions))
-                sling = np.array([s_t[3]] * len(actions))
-                states = [pixels, num_objects, input_bird, sling]
+                input_bird = np.array([s_t[1]] * len(actions))
+                states = [pixels, input_bird]
                 new_actions = []
-                target_coordinates = []
                 for a in actions:
                     for tap in globalConfig.tap_values[bird_type]:
-                        # print(str.format("target_type = {}, ({}, {}), angle={}, tap={}"
-                        #                  , globalConfig.target_type_strings[int(a[0])], int(a[1]), int(a[2]), a[3], tap))
-                        new_actions.append(np.array([a[0], a[3], tap]))
-                        target_coordinates.append([a[1], a[2]])
+                        new_actions.append(np.array([(a[1]-sling_x-200)/5/globalConfig.FRAME_WIDTH
+                                                        , (a[2]-(sling_y-250))/5/globalConfig.FRAME_HEIGHT, tap]))
                 new_actions = np.array(new_actions)
                 q_values = self.network.target_model.predict(states + [new_actions])
                 sorted_indexes = [k[0] for k in sorted(enumerate(q_values), reverse=True, key=lambda x: x[1])]
                 # print(target_q_values[sorted_indexes])
 
-                print('cnt=', self.cnt)
                 if self.cnt % globalConfig.epsilon_decay_interval == 0:
                     old = globalConfig.epsilon
                     globalConfig.epsilon = max(globalConfig.epsilon - globalConfig.epsilon_decay, globalConfig.epsilon_min)
@@ -215,18 +202,15 @@ class AgentDQN(EventTask):
                     action_idx = 0
                 a_t = new_actions[sorted_indexes[action_idx]]
 
-                target_x = target_coordinates[action_idx][0]
-                target_y = target_coordinates[action_idx][1]
-                target_type = int(a_t[0])
-                angle = a_t[1]
-                tap_time = int(a_t[2])
-                print(str.format("next action : target({}:{},{}), angle({}), tap time({})"
-                                 , globalConfig.target_type_strings[target_type], target_x, target_y, angle, tap_time))
+                target_x = int(a_t[0] * 5 * globalConfig.FRAME_WIDTH + sling_x + 200)
+                target_y = int(a_t[1] * 5 * globalConfig.FRAME_HEIGHT + sling_y - 250)
+                tap_time = int(a_t[2] * 100)
+                print(str.format("next action : target({},{}), tap time({})", target_x, target_y, tap_time))
 
                 # add trajectory
                 try:
-                    self.buff.add_dqn_exp(self.state_cache[env_proxy], self.action_cache[env_proxy], r_t, s_t1
-                                  , new_actions, done)
+                    self.buff.add_dqn_exp(self.state_cache[env_proxy], self.action_cache[env_proxy], r_t, s_t1,
+                                          new_actions, done)
                     print("store transition into replay buffer")
 
                     # print("add trajectory")
@@ -247,4 +231,4 @@ class AgentDQN(EventTask):
                 self.action_cache[env_proxy] = a_t
 
                 # execute an action
-                env_proxy.execute(target_x, target_y, angle, tap_time)
+                env_proxy.execute(target_x, target_y, tap_time)

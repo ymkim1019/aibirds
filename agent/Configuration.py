@@ -34,11 +34,11 @@ class Configuration:
         self.agent_type = ""
 
         self.tap_values = [
-            [0], # red
-            list(np.arange(65, 91, 2)), # yellow
-            list(np.arange(70, 91, 2)), # blue
-            list(np.arange(70, 91, 2)), # black
-            list(np.arange(65, 86, 2)) # white
+            [0.0], # red
+            list(np.arange(0.65, 0.91, 0.02)), # yellow
+            list(np.arange(0.70, 0.91, 0.02)), # blue
+            list(np.arange(0.70, 0.91, 0.02)), # black
+            list(np.arange(0.65, 0.86, 0.02)) # white
         ]
         self.target_type_strings = ["pig", "stone", "wood", "ice", "tnt"]
         self.epsilon = 1

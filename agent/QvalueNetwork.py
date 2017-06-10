@@ -35,16 +35,16 @@ class QvalueNetwork(object):
         print("Building network....")
 
         # inputs
-        input_2d = Input(shape=(globalConfig.FRAME_WIDTH, globalConfig.FRAME_HEIGHT, 1)) # 2d
-        input_num_objects = Input(shape=(5,)) # num of pigs, stones, woods, ices, tnts
+        input_2d = Input(shape=(globalConfig.FRAME_WIDTH, globalConfig.FRAME_HEIGHT, 3)) # 3 CHANNEL
+        # input_num_objects = Input(shape=(5,)) # num of pigs, stones, woods, ices, tnts
         input_bird = Input(shape=(1,)) # bird on the sling
-        input_sling_pos = Input(shape=(2,)) # pos of sling
-        A = Input(shape=(3,)) # target type, angle, tap
+        # input_sling_pos = Input(shape=(2,)) # pos of sling
+        A = Input(shape=(3,)) # x, y, tap
 
         # CNN
         convModel = Sequential()
         convModel.add(Conv2D(32, (8, 8), strides=(4, 4), activation='relu'
-                                    ,input_shape=(globalConfig.FRAME_WIDTH, globalConfig.FRAME_HEIGHT, 1)))
+                                    ,input_shape=(globalConfig.FRAME_WIDTH, globalConfig.FRAME_HEIGHT, 3)))
         convModel.add(Conv2D(64, (4, 4), strides=(2, 2), activation='relu'))
         convModel.add(Conv2D(64, (3, 3), strides=(1, 1), activation='relu'))
         convModel.add(Flatten())
@@ -52,13 +52,13 @@ class QvalueNetwork(object):
         conv_out = convModel(input_2d)
 
         # FC
-        fc_input = concatenate([conv_out, input_num_objects, input_bird, input_sling_pos, A], axis=-1)
+        fc_input = concatenate([conv_out, input_bird, A], axis=-1)
         x = Dense(512, activation='relu')(fc_input)
         x = Dense(512, activation='relu')(x)
         x = Dense(512, activation='relu')(x)
         V = Dense(1, activation='linear')(x)
 
-        S = [input_2d, input_num_objects, input_bird, input_sling_pos]
+        S = [input_2d, input_bird]
         model_input = S + [A]
         model = Model(inputs=model_input, outputs=V)
         adam = Adam(lr=self.LEARNING_RATE, clipvalue=1)
