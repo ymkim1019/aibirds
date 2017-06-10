@@ -55,6 +55,7 @@ public class NaiveAgentDQN implements Runnable {
 	public DataInputStream in;
 	public DataOutputStream out;
 	public int stars = 0;
+	public int min_star = 0;
 	
 	public static int time_limit = 12;
 	private Map<Integer,Integer> scores = new LinkedHashMap<Integer,Integer>();
@@ -156,7 +157,7 @@ public class NaiveAgentDQN implements Runnable {
 				}
 				System.out.println("Total Score: " + totalScore);
 				
-				if (stars > 0)
+				if (stars >= min_star)
 				{
 					currentLevel++;
 					if (currentLevel > endLevel)
@@ -218,29 +219,42 @@ public class NaiveAgentDQN implements Runnable {
 			Point targetPoint = new Point((int)targetList.get(i).getCenterX(), (int)targetList.get(i).getCenterY());
 			ArrayList<Point> pts = tp.estimateLaunchPoint(sling, targetPoint);
 //			for (int j=0;j<pts.size();j++) // high and low shot
-			if (true)
+			if (pts.size() > 0)
 			{
 				Point releasePoint = pts.get(0);
 				double angle = tp.getReleaseAngle(sling, releasePoint);
 				angle = Math.toDegrees(angle);
-//				typeList.add(type);
-//				xList.add((int)targetList.get(i).getCenterX());
-//				yList.add((int)targetList.get(i).getCenterY());
-//				angleList.add(angle);
 				
 				if (ABUtil.isReachableAvoidHills(vision, (int)targetPoint.getX(), (int)targetPoint.getY(), sling, angle) == true)
 				{
 					typeList.add(type);
-					xList.add((int)targetList.get(i).getCenterX());
-					yList.add((int)targetList.get(i).getCenterY());
+					xList.add((int)targetPoint.getX());
+					yList.add((int)targetPoint.getY());
 					angleList.add(angle);
+					continue;
 				}
 				else
 				{
-					String[] typeStrings = {"pig", "stone", "wood", "ice", "tnt"}; 
-					System.out.format("target %s, (%f, %f), angle=%f is blocked by hills\n"
-							, typeStrings[type], targetPoint.getX(), targetPoint.getY(), angle);
+					if (pts.size() > 1)
+					{
+						releasePoint = pts.get(1);
+						angle = tp.getReleaseAngle(sling, releasePoint);
+						angle = Math.toDegrees(angle);
+						
+						if (ABUtil.isReachableAvoidHills(vision, (int)targetPoint.getX(), (int)targetPoint.getY(), sling, angle) == true)
+						{
+							typeList.add(type);
+							xList.add((int)targetPoint.getX());
+							yList.add((int)targetPoint.getY());
+							angleList.add(angle);
+							continue;
+						}	
+					}	
 				}
+				
+				String[] typeStrings = {"pig", "stone", "wood", "ice", "tnt"}; 
+				System.out.format("target %s, (%f, %f), angle=%f is blocked by hills\n"
+						, typeStrings[type], targetPoint.getX(), targetPoint.getY(), angle);
 			}
 		}		
 	}
@@ -379,6 +393,18 @@ public class NaiveAgentDQN implements Runnable {
 				Point targetPoint = new Point(target_x, target_y);
 				ArrayList<Point> pts = tp.estimateLaunchPoint(sling, targetPoint);
 				Point releasePoint = pts.get(0);
+				double angle = tp.getReleaseAngle(sling, releasePoint);
+				angle = Math.toDegrees(angle);
+				if (ABUtil.isReachableAvoidHills(vision, (int)targetPoint.getX(), (int)targetPoint.getY(), sling, angle) == false)
+				{
+					if (pts.size() > 1)
+					{
+						System.out.println("low shot->high shot");
+						releasePoint = pts.get(1);
+					}
+				}
+				
+				
 				Shot shot = new Shot();
 				// Get the reference point
 				Point refPoint = tp.getReferencePoint(sling);

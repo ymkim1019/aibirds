@@ -113,7 +113,7 @@ public class MainEntry {
 
 						}
 						// 2017-06-06 ymkim1019
-						else if (args.length == 5 && (command.equalsIgnoreCase("-na") || command.equalsIgnoreCase("-dqn")))
+						else if (args.length == 6 && (command.equalsIgnoreCase("-na") || command.equalsIgnoreCase("-dqn")))
 						{
 							if (command.equalsIgnoreCase("-na"))
 							{
@@ -151,6 +151,7 @@ public class MainEntry {
 								int port = Integer.parseInt(args[4]);
 								na.agent_ip = ipAddr;
 								na.agent_port = port;
+								na.min_star = Integer.parseInt(args[5]);
 								na.run();
 							}
 						}

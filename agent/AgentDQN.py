@@ -138,7 +138,7 @@ class AgentDQN(EventTask):
                 self.network.target_train()
                 self.cnt = 0
                 print("Saving weights....")
-                self.network.target_model.save_weights("ddqnmodel.h5", overwrite=True)
+                self.network.target_model.save_weights("dqnmodel.h5", overwrite=True)
 
     # def run(self):
     #     self.start_timer()
