@@ -47,7 +47,7 @@ class RetraceAgent(Agent):
             ob = Observation(data)
 
             action, action_prob = self.network.getAction(np.array(ob.img), np.array(ob.birds_seq), self.PREDICT)
-            action *= self.ANGLE_STEP + self.ANGLE_MIN
+            action *= int(self.ANGLE_STEP + self.ANGLE_MIN)
             if ob.birds_seq[0] != 0:
                 prev_reward = - ob.pigs_num
                 if ob.first_shot or ob.prev_stars == -5: # first shot and no hit 반복이면 계속 episode가 생성됨
