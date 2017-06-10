@@ -9,7 +9,7 @@ class TrajectoryMemory:
         self.total_size = 0
         self.memory = deque()
         self.MAX_SIZE = 1000 # maximum number of episodes
-        self.PATH = 'retrace/memory/'
+        self.PATH = 'retrace/memory_12_001/'
         self.init_load()
         np.random.seed(1)
 

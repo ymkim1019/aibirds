@@ -61,6 +61,7 @@ public class NaiveAgent implements Runnable {
 	private boolean prevFail = false;
 	private boolean prevNoHit = false;
 	
+	private boolean randomPlay = true;
 	
 	public enum EnvToAgentJobId {
 		FROM_ENV_TO_AGENT_REQUEST_FOR_ACTION;
@@ -77,7 +78,7 @@ public class NaiveAgent implements Runnable {
 		tp = new TrajectoryPlanner();
 		prevTarget = null;
 		firstShot = true;
-		randomGenerator = new Random(); // should fix random seed ?
+		randomGenerator = new Random(1); // fixed random seed ?
 		// --- go to the Poached Eggs episode level selection page ---
 		ActionRobot.GoFromMainMenuToLevelSelection();
 
@@ -141,7 +142,18 @@ public class NaiveAgent implements Runnable {
 							+ " Score: " + scores.get(key) + " Stars: " + starsmap.get(key));
 				}
 				System.out.println("Total Score: " + totalScore);
-				aRobot.loadLevel(++currentLevel); // TODO: modify here?
+				
+				// 2017-06-10 : jyham
+				if (randomPlay){
+					currentLevel = randomGenerator.nextInt(21) + 1;
+					aRobot.loadLevel(currentLevel);
+				}
+				else{
+					aRobot.loadLevel(++currentLevel); // TODO: modify here?
+				}
+				
+				//aRobot.loadLevel(++currentLevel);
+				
 				// make a new trajectory planner whenever a new level is entered
 				tp = new TrajectoryPlanner();
 
@@ -151,7 +163,16 @@ public class NaiveAgent implements Runnable {
 				System.out.println("Restart");
 				// jyham: to send failure
 				prevFail = true;
-				aRobot.restartLevel();
+				// 2017-06-10 : jyham
+				if (randomPlay){
+					currentLevel = randomGenerator.nextInt(21) + 1;
+					aRobot.loadLevel(currentLevel);
+				}
+				else{
+					aRobot.restartLevel(); 
+				}
+				
+				//aRobot.restartLevel();
 			} else if (state == GameState.LEVEL_SELECTION) {
 				System.out
 				.println("Unexpected level selection page, go to the last current level : "

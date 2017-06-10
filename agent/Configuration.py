@@ -10,7 +10,7 @@ class Configuration:
 
         self.SHOW = False
         self.AGENT_TYPE = 'RETRACE'
-        #self.AGENT_TYPE = 'DQN'
+        #self.AGENT_TYPE = 'NORMAL'
         self.STD_SLING_HEIGHT = 60
 
         self.OBSERVE_SIZE = 84

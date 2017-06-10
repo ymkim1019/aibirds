@@ -33,9 +33,10 @@ class RetraceAgent(Agent):
         self.ANGLE_NUM = globalConfig.ANGLE_NUM
         self.ANGLE_STEP = globalConfig.ANGLE_STEP
 
-        self.DETERMINISTIC = False
+        self.TRAIN = True
+        self.PREDICT = not self.TRAIN
 
-        self.network = RetraceNetwork(True, self.traj_mem)
+        self.network = RetraceNetwork(self.traj_mem)
 
     def do_job(self, job_obj):
         (job_id, data, env_proxy) = job_obj
@@ -45,7 +46,7 @@ class RetraceAgent(Agent):
         if job_id == self.OBSERVE:
             ob = Observation(data)
 
-            action, action_prob = self.network.getAction(np.array(ob.img), np.array(ob.birds_seq), self.DETERMINISTIC)
+            action, action_prob = self.network.getAction(np.array(ob.img), np.array(ob.birds_seq), self.PREDICT)
             action *= self.ANGLE_STEP + self.ANGLE_MIN
             if ob.birds_seq[0] != 0:
                 prev_reward = - ob.pigs_num

@@ -2,13 +2,14 @@ import numpy as np
 from Configuration import globalConfig
 import tensorflow as tf
 from TrajectoryMemory import TrajectoryMemory
+import pickle
 class RetraceNetwork():
-    def __init__(self, load, traj_mem): # if not load, load_step = 0
+    def __init__(self, traj_mem): # if not load, load_step = 0
         # fix random seed
         np.random.seed(1)
         tf.set_random_seed(1)
 
-        self.SAVE_PATH = 'retrace/weight/'
+        self.SAVE_PATH = 'retrace/weight_12_001/'
         self.traj_mem = traj_mem
 
         self.OBSERVE_SIZE = globalConfig.OBSERVE_SIZE
@@ -22,6 +23,7 @@ class RetraceNetwork():
         self.epsilon = 1.0
         self.EPSILON_DECAY_STEP = 0.001
         self.EPSILON_MIN = 0.01
+        self.EPSILON_FILE = self.SAVE_PATH + 'epsilon.pkl'
         self.LAMBDA = 1.0
 
         self.LEARNING_RATE = 0.001
@@ -44,13 +46,16 @@ class RetraceNetwork():
 
         self.prev_min_cost = 1000000
 
-        if load:
-            checkpoint = tf.train.get_checkpoint_state(self.SAVE_PATH)
-            if checkpoint and checkpoint.model_checkpoint_path:
-                self.saver.restore(self.session, checkpoint.model_checkpoint_path)
-                print ("Model restored from "+checkpoint.model_checkpoint_path)
-            else:
-                print ("Cannot restore the network")
+        #if load:
+        checkpoint = tf.train.get_checkpoint_state(self.SAVE_PATH)
+        if checkpoint and checkpoint.model_checkpoint_path:
+            self.saver.restore(self.session, checkpoint.model_checkpoint_path)
+            print ("Model restored from "+checkpoint.model_checkpoint_path)
+            self.epsilon = pickle.load(self.EPSILON_FILE)
+            print ("Epsilon: "+str(self.epsilon))
+        else:
+            print ("Cannot restore the network")
+            #self.epsilon = 1.0
 
     def createTrainMethod(self):
         self.input_action = tf.placeholder("float", [None, self.ANGLE_NUM])
@@ -77,7 +82,8 @@ class RetraceNetwork():
         if c < self.prev_min_cost:
             self.saver.save(self.session, self.SAVE_PATH + 'network', global_step=self.epoch)
             self.prev_min_cost = c
-            print("Saved on epoch %d, cost %f" %(self.epoch, c))
+            pickle.dump(self.epsilon, self.EPSILON_FILE)
+            print("Saved on epoch %d, cost %f, epsilon %f" %(self.epoch, c, self.epsilon))
         self.copyNetwork()
         self.epoch += 1
         return c
@@ -228,7 +234,7 @@ class RetraceNetwork():
         return vec
 
 # traj_mem = TrajectoryMemory()
-# rn = RetraceNetwork(True, traj_mem)
+# rn = RetraceNetwork(traj_mem)
 # image = np.ones((84,84))
 # info = np.ones(10)
 # index = rn.getAction(image,info)
