@@ -347,6 +347,11 @@ public class NaiveAgent implements Runnable {
 						tapInterval =  60;
 					}		
 					
+					if (tpt == null){
+						System.out.println("no hit point");
+						return state;
+					}
+					
 					if (tpt != null){
 						tapTime = tp.getTapTime(sling, releasePoint, tpt, tapInterval);
 						System.out.println(tpt.getX() + ","+tpt.getY());
