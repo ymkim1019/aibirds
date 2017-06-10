@@ -58,6 +58,7 @@ public class NaiveAgent implements Runnable {
 	private int prevStars;
 	private boolean shouldWriteStars = false;
 	private boolean prevFail = false;
+	private boolean prevNoHit = false;
 	
 	
 	public enum EnvToAgentJobId {
@@ -213,7 +214,6 @@ public class NaiveAgent implements Runnable {
 				out.writeInt(0);
 			}
 		}
-		//System.out.println(birds_seq.length);
 		else{
 			for (int i = 0; i < max_birds_num ; i++){
 		
@@ -239,6 +239,10 @@ public class NaiveAgent implements Runnable {
 		else if (prevFail){
 			out.writeInt(-10);
 			prevFail = false;
+		}
+		else if (prevNoHit){
+			out.writeInt(-5);
+			prevNoHit = false;
 		}
 		else{
 			out.writeInt(0);
@@ -294,7 +298,6 @@ public class NaiveAgent implements Runnable {
 				Point releasePoint = null;
 				Shot shot = new Shot();
 				int dx, dy;
-				//Point _tpt = pigs.get(0).getCenter();
 				
 				releasePoint = tp.findReleasePoint(sling, releaseAngle);
 				Point refPoint = tp.getReferencePoint(sling);
@@ -312,19 +315,18 @@ public class NaiveAgent implements Runnable {
 						int px = (int)p.getX();
 						int py = (int)p.getY();
 						if (px>250 && px<sc_w && py<sc_h && py>0){
-							int pix = img.getRGB((int)p.getX(), (int)p.getY());
+							int pix = img.getRGB(px, py);
 							int r = (pix >> 16) & 0xFF;
 							int g = (pix >> 8) & 0xFF;
 							int b = pix & 0xFF;
 							if (r != 0 && g != 0 && b != 0){
-								System.out.println("p: "+p.getX()+","+p.getY() +" "+ r+" "+g+" "+b);
+								System.out.println("px: "+px+", py: "+py);
 								tpt = p;
 								break;
 							}
-							//img.setRGB((int)p.getX(), (int)p.getY(), 0xff0000);
 						}
 					}
-					//File f = new File ("asdf.png");
+					//File f = new File("asdf.png");
 					//ImageIO.write(img, "PNG", f);
 					
 					int tapInterval = 0;
@@ -348,7 +350,8 @@ public class NaiveAgent implements Runnable {
 					}		
 					
 					if (tpt == null){
-						System.out.println("no hit point");
+						System.out.println("No hit point");
+						prevNoHit = true;
 						return state;
 					}
 					
@@ -357,8 +360,6 @@ public class NaiveAgent implements Runnable {
 						System.out.println(tpt.getX() + ","+tpt.getY());
 						System.out.println("tapTime: "+tapTime);
 					}
-					//int tapInterval = 0;
-					//int tapTime = tp.getTapTime(sling, releasePoint, _tpt, tapInterval);
 					dx = (int)releasePoint.getX() - refPoint.x;
 					dy = (int)releasePoint.getY() - refPoint.y;
 					shot = new Shot(refPoint.x, refPoint.y, dx, dy, 0, tapTime);
