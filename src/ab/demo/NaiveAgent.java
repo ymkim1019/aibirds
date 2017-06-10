@@ -78,7 +78,7 @@ public class NaiveAgent implements Runnable {
 		tp = new TrajectoryPlanner();
 		prevTarget = null;
 		firstShot = true;
-		randomGenerator = new Random(1); // fixed random seed ?
+		randomGenerator = new Random(); // fixed random seed ?
 		// --- go to the Poached Eggs episode level selection page ---
 		ActionRobot.GoFromMainMenuToLevelSelection();
 
@@ -344,7 +344,7 @@ public class NaiveAgent implements Runnable {
 							int r = (pix >> 16) & 0xFF;
 							int g = (pix >> 8) & 0xFF;
 							int b = pix & 0xFF;
-							if (r != 0 && g != 0 && b != 0){
+							if (r != 0 && r!=0xff && g != 0 && b != 0){
 								System.out.println("px: "+px+", py: "+py);
 								tpt = p;
 								break;

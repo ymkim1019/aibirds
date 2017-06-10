@@ -2,7 +2,7 @@ import numpy as np
 from Configuration import globalConfig
 import tensorflow as tf
 from TrajectoryMemory import TrajectoryMemory
-import pickle
+#import pickle
 class RetraceNetwork():
     def __init__(self, traj_mem): # if not load, load_step = 0
         # fix random seed
@@ -23,8 +23,9 @@ class RetraceNetwork():
         self.epsilon = 1.0
         self.EPSILON_DECAY_STEP = 0.001
         self.EPSILON_MIN = 0.01
-        self.EPSILON_FILE = self.SAVE_PATH + 'epsilon.pkl'
+        self.EPSILON_PATH = self.SAVE_PATH + 'epsilon.txt'
         self.LAMBDA = 1.0
+        self.EXPLORE = 1000
 
         self.LEARNING_RATE = 0.001
         self.BATCH_SIZE = 32
@@ -51,7 +52,11 @@ class RetraceNetwork():
         if checkpoint and checkpoint.model_checkpoint_path:
             self.saver.restore(self.session, checkpoint.model_checkpoint_path)
             print ("Model restored from "+checkpoint.model_checkpoint_path)
-            self.epsilon = pickle.load(self.EPSILON_FILE)
+            f = open(self.EPSILON_PATH, 'r')
+            self.epsilon = float(f.readline())
+            self.epoch = int(f.readline())
+            self.prev_min_cost = float(f.readline())
+            f.close()
             print ("Epsilon: "+str(self.epsilon))
         else:
             print ("Cannot restore the network")
@@ -69,6 +74,9 @@ class RetraceNetwork():
         #img_batch = np.array([np.zeros((84,84)) for episode in minibatch for data in episode])  # (None, 84, 84)
         img_batch = np.array([data[0] for episode in minibatch for data in episode]) # (None, 84, 84)
         info_batch = np.array([data[1] for episode in minibatch for data in episode]) # (None, 10)
+        #action_batch = [data[2] for episode in minibatch for data in episode]
+        #print(action_batch)
+        #return
         action_batch = np.array([self.angle2onehot(data[2]) for episode in minibatch for data in episode]) # (None, angle num)
         y_batch = np.array([data for episode in minibatch for data in self.calculate_new_q(episode)]) # (None,)
 
@@ -78,14 +86,25 @@ class RetraceNetwork():
             self.input_info: info_batch,
             self.input_action: action_batch,
             self.input_y: y_batch})
+        self.epoch += 1
+        print ("epoch : %d, cost : %f, epsilon %f"%(self.epoch, c, self.epsilon))
 
-        if c < self.prev_min_cost:
+        if c < self.prev_min_cost or self.epoch % 100 == 0:
             self.saver.save(self.session, self.SAVE_PATH + 'network', global_step=self.epoch)
             self.prev_min_cost = c
-            pickle.dump(self.epsilon, self.EPSILON_FILE)
+            f = open(self.EPSILON_PATH, 'w')
+            f.write(str(self.epsilon)+'\n')
+            f.write(str(self.epoch)+'\n')
+            f.write(str(self.prev_min_cost))
+            #pickle.dump(str(self.epsilon), f)
+            f.close()
             print("Saved on epoch %d, cost %f, epsilon %f" %(self.epoch, c, self.epsilon))
+
         self.copyNetwork()
-        self.epoch += 1
+
+        if self.epsilon > self.EPSILON_MIN:
+            self.epsilon -= self.EPSILON_DECAY_STEP
+
         return c
 
     def getAction(self, image, info, deterministic):
@@ -102,9 +121,8 @@ class RetraceNetwork():
             action_index = max_action_index
             prob += (1 - self.epsilon)
 
-        if self.epsilon > self.EPSILON_MIN:
-            self.epsilon -= self.EPSILON_DECAY_STEP
-
+        if self.traj_mem.size > self.EXPLORE:
+            self.trainNetwork()
         return action_index, prob
 
     def calculate_new_q(self, episode):
@@ -131,7 +149,7 @@ class RetraceNetwork():
         else:
             expected_Q_value_batch = np.sum(np.multiply(cur_policy_prob_batch, Q_value_batch), axis=1) # (tot, )
 
-            td_batch = reward_batch + self.GAMMA*np.append(expected_Q_value_batch[1:],0) - np.append(actioned_Q_value_batch[:-2],0)
+            td_batch = reward_batch + self.GAMMA*np.append(expected_Q_value_batch[1:],0) - np.append(actioned_Q_value_batch[:-1],0)
             # (tot, )
 
 
@@ -226,18 +244,25 @@ class RetraceNetwork():
         return tf.nn.max_pool(x, ksize=[1,2,2,1],strides=[1,2,2,1], padding="SAME")
 
     def angle2num(self, angle):
+
         return int((angle - self.ANGLE_MIN)/self.ANGLE_STEP)
 
     def angle2onehot(self, angle):
+        #print(angle)
+        #num = self.angle2num(angle)
+        #print(num)
         vec = np.zeros(self.ANGLE_NUM)
         vec[self.angle2num(angle)] = 1
         return vec
-
+#
 # traj_mem = TrajectoryMemory()
 # rn = RetraceNetwork(traj_mem)
+# rn.trainNetwork()
 # image = np.ones((84,84))
 # info = np.ones(10)
-# index = rn.getAction(image,info)
+# index = rn.getAction(image,info,False)
+# print(index)
+#print(index)
 # print (index)
 # episode = traj_mem.memory[6]
 # for i in range(10):
