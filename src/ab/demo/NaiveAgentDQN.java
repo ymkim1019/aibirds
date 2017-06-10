@@ -32,6 +32,7 @@ import ab.planner.TrajectoryPlanner;
 import ab.utils.StateUtil;
 import ab.vision.ABObject;
 import ab.vision.ABType;
+import ab.utils.ABUtil;
 import ab.vision.GameStateExtractor.GameState;
 import ab.vision.Vision;
 // 2017-06-04 : ymkim1019
@@ -59,6 +60,7 @@ public class NaiveAgentDQN implements Runnable {
 	private Map<Integer,Integer> scores = new LinkedHashMap<Integer,Integer>();
 	private Map<Integer,Integer> levelStars = new LinkedHashMap<Integer,Integer>();
 	TrajectoryPlanner tp;
+	ABUtil util;
 	private boolean firstShot;
 	private Point prevTarget;
 	
@@ -79,6 +81,7 @@ public class NaiveAgentDQN implements Runnable {
 		prevTarget = null;
 		firstShot = true;
 		randomGenerator = new Random();
+		util = new ABUtil();
 		// --- go to the Poached Eggs episode level selection page ---
 		ActionRobot.GoFromMainMenuToLevelSelection();
 
@@ -153,7 +156,7 @@ public class NaiveAgentDQN implements Runnable {
 				}
 				System.out.println("Total Score: " + totalScore);
 				
-				if (stars > 1)
+				if (stars > 0)
 				{
 					currentLevel++;
 					if (currentLevel > endLevel)
@@ -207,7 +210,7 @@ public class NaiveAgentDQN implements Runnable {
 	}
 	
 	public void makeActions(List<Integer> typeList, List<Integer> xList, List<Integer> yList, List<Double> angleList
-			, List<Rectangle> targetList, Rectangle sling, int type)
+			, List<Rectangle> targetList, Rectangle sling, int type, Vision vision)
 	{
 		for (int i=0;i<targetList.size();i++)
 		{
@@ -219,10 +222,24 @@ public class NaiveAgentDQN implements Runnable {
 				Point releasePoint = pts.get(j);
 				double angle = tp.getReleaseAngle(sling, releasePoint);
 				angle = Math.toDegrees(angle);
-				typeList.add(type);
-				xList.add((int)targetList.get(i).getCenterX());
-				yList.add((int)targetList.get(i).getCenterY());
-				angleList.add(angle);
+//				typeList.add(type);
+//				xList.add((int)targetList.get(i).getCenterX());
+//				yList.add((int)targetList.get(i).getCenterY());
+//				angleList.add(angle);
+				
+				if (ABUtil.isReachableAvoidHills(vision, (int)targetPoint.getX(), (int)targetPoint.getY(), sling, angle) == true)
+				{
+					typeList.add(type);
+					xList.add((int)targetList.get(i).getCenterX());
+					yList.add((int)targetList.get(i).getCenterY());
+					angleList.add(angle);
+				}
+				else
+				{
+					String[] typeStrings = {"pig", "stone", "wood", "ice", "tnt"}; 
+					System.out.format("target %s, (%f, %f), angle=%f is blocked by hills\n"
+							, typeStrings[type], targetPoint.getX(), targetPoint.getY(), angle);
+				}
 			}
 		}		
 	}
@@ -251,11 +268,11 @@ public class NaiveAgentDQN implements Runnable {
 		List<Integer> yList = new ArrayList<Integer>();
 		List<Double> angleList = new ArrayList<Double>();
 		String[] typeStrings = {"pig", "stone", "wood", "ice", "tnt"}; 
-		makeActions(typeList, xList, yList, angleList, pigs, sling, 0);
-		makeActions(typeList, xList, yList, angleList, stones, sling, 1);
-		makeActions(typeList, xList, yList, angleList, woods, sling, 2);
-		makeActions(typeList, xList, yList, angleList, ices, sling, 3);
-		makeActions(typeList, xList, yList, angleList, tnts, sling, 4);		
+		makeActions(typeList, xList, yList, angleList, pigs, sling, 0, vision);
+		makeActions(typeList, xList, yList, angleList, stones, sling, 1, vision);
+		makeActions(typeList, xList, yList, angleList, woods, sling, 2, vision);
+		makeActions(typeList, xList, yList, angleList, ices, sling, 3, vision);
+		makeActions(typeList, xList, yList, angleList, tnts, sling, 4, vision);		
 		
 		int packetSize = 4 * 14 + typeList.size() * 20 + baos.size();
 		System.out.println("packet size = " + packetSize);

@@ -1,6 +1,7 @@
 package ab.utils;
 
 import java.awt.Point;
+import java.awt.Rectangle;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -77,5 +78,39 @@ public class ABUtil {
 		return result;
 	}
 	
-
+	//Return true if the target can be hit by releasing the bird at the specified release point
+	public static boolean isReachableAvoidHills(Vision vision, int target_x, int target_y, Rectangle sling, double angle)
+	{ 
+		angle = Math.toRadians(angle);
+		Point target = new Point(target_x, target_y);
+		Point releasePoint = tp.findReleasePoint(sling, angle);
+		int traY = tp.getYCoordinate(vision.findSlingshotMBR(), releasePoint, target_x);
+		if (Math.abs(traY - target_y) > 100)
+		{	
+			//System.out.println(Math.abs(traY - target.y));
+			return false;
+		}
+		boolean result = true;
+		List<Point> points = tp.predictTrajectory(vision.findSlingshotMBR(), releasePoint);		
+		for(Point point: points)
+		{
+		  if(point.x < 840 && point.y < 480 && point.y > 100 && point.x > 400){
+			int cnt = 0;
+			for(ABObject ab: vision.findHills())
+			{
+				if( 
+						((ab.contains(point) && !ab.contains(target))||Math.abs(vision.getMBRVision()._scene[point.y][point.x] - 72 ) < 10) 
+						&& point.x < target.x
+						)
+				{
+					cnt++;
+					return false;
+				}
+			}
+			if (cnt > 0)
+				System.out.println("hill cnt=" + cnt);
+		  }
+		}
+		return result;
+	}
 }

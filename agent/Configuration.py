@@ -35,10 +35,10 @@ class Configuration:
 
         self.tap_values = [
             [0], # red
-            list(np.arange(65, 91, 5)), # yellow
-            list(np.arange(70, 91, 5)), # blue
-            list(np.arange(70, 91, 5)), # black
-            list(np.arange(65, 86, 5)) # white
+            list(np.arange(65, 91, 2)), # yellow
+            list(np.arange(70, 91, 2)), # blue
+            list(np.arange(70, 91, 2)), # black
+            list(np.arange(65, 86, 2)) # white
         ]
         self.target_type_strings = ["pig", "stone", "wood", "ice", "tnt"]
         self.epsilon = 1

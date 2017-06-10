@@ -46,7 +46,7 @@ class AgentDDQN(EventTask):
             print("Now we load the weight")
             try:
                 self.network.model.load_weights("ddqnmodel.h5")
-                self.network.target_model_model.load_weights("ddqnmodel.h5")
+                self.network.target_model.load_weights("ddqnmodel.h5")
                 print("Weight load successfully")
             except:
                 print("Cannot find the weight")

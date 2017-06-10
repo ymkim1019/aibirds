@@ -45,7 +45,7 @@ class AgentDQN(EventTask):
             print("Now we load the weight")
             try:
                 self.network.model.load_weights("dqnmodel.h5")
-                self.network.target_model_model.load_weights("dqnmodel.h5")
+                self.network.target_model.load_weights("dqnmodel.h5")
                 print("Weight load successfully")
             except:
                 print("Cannot find the weight")
@@ -87,7 +87,7 @@ class AgentDQN(EventTask):
         if self.buff.count() > 0 and self.trainable == 1:
             self.cnt += 1
 
-            print("Do the batch update...# of experiences =", self.buff.count())
+            print("Do the batch update(", self.cnt, ")...# of experiences =", self.buff.count())
 
             # (self.state_cache[env_proxy], self.action_cache[env_proxy], r_t, s_t1, new_actions, done)
 
