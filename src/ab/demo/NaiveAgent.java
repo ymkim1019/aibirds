@@ -35,6 +35,7 @@ import ab.vision.Vision;
 
 // 2017-05-17 : jyham
 import ab.vision.Preprocessor;
+import java.awt.Color;
 
 public class NaiveAgent implements Runnable {
 
@@ -175,7 +176,7 @@ public class NaiveAgent implements Runnable {
 						* (p1.y - p2.y)));
 	}
 
-	public void send_env_to_agent(Vision vision) throws IOException
+	public BufferedImage send_env_to_agent(Vision vision) throws IOException
 	{
 		//System.out.println(aRobot.getState());
 		
@@ -207,13 +208,22 @@ public class NaiveAgent implements Runnable {
 		out.writeInt(data_size); // Job ID + birds sequence + Img
 		out.writeInt(EnvToAgentJobId.FROM_ENV_TO_AGENT_REQUEST_FOR_ACTION.ordinal()); // Job ID
 		
-		for (int i = 0; i < max_birds_num ; i++){
-			if (i<birds_seq.length) {
-				out.writeInt(birds_seq[i].id);
-				System.out.println(birds_seq[i] + " " +birds_seq[i].id);
+		if (birds_seq == null){
+			for (int i=0; i<max_birds_num; i++){
+				out.writeInt(0);
 			}
-			else out.writeInt(0);
-		} // birds sequence
+		}
+		//System.out.println(birds_seq.length);
+		else{
+			for (int i = 0; i < max_birds_num ; i++){
+		
+				if (i<birds_seq.length) {
+					out.writeInt(birds_seq[i].id);
+					System.out.println(birds_seq[i] + " " +birds_seq[i].id);
+				}
+				else out.writeInt(0);
+			} // birds sequence
+		}
 		
 		out.writeInt(sling.x);
 		out.writeInt(sling.y);
@@ -239,6 +249,8 @@ public class NaiveAgent implements Runnable {
 		
 		out.write(imageInByte);
 		out.flush();
+		
+		return imgBuf;
 	}
 	
 	
@@ -246,8 +258,9 @@ public class NaiveAgent implements Runnable {
 	{
 		// capture Image
 		BufferedImage screenshot = ActionRobot.doScreenShot();
-		
-		System.out.println("screen shot size = " + screenshot.getWidth() + "," + screenshot.getHeight());
+		int sc_w = (int) screenshot.getWidth();
+		int sc_h = (int) screenshot.getHeight();
+		System.out.println("screen shot size = " + sc_w + "," + sc_h);
 		
 		Vision vision = new Vision(screenshot);
 		
@@ -270,7 +283,7 @@ public class NaiveAgent implements Runnable {
 		if (sling != null){
 			if (!pigs.isEmpty()){
 				
-				send_env_to_agent(vision);
+				BufferedImage img = send_env_to_agent(vision);
 				
 				int size = in.readInt();
 				int job_id = in.readInt();
@@ -291,7 +304,54 @@ public class NaiveAgent implements Runnable {
 					System.out.println("Release Point: " + releasePoint);
 					System.out.println("Release Angle: "
 							+ Math.toDegrees(cal_releaseAngle));
+								
+					
+					List<Point> traj = tp.predictTrajectory(sling, releasePoint);
+					Point tpt = null;
+					for (Point p : traj){
+						int px = (int)p.getX();
+						int py = (int)p.getY();
+						if (px>250 && px<sc_w && py<sc_h && py>0){
+							int pix = img.getRGB((int)p.getX(), (int)p.getY());
+							int r = (pix >> 16) & 0xFF;
+							int g = (pix >> 8) & 0xFF;
+							int b = pix & 0xFF;
+							if (r != 0 && g != 0 && b != 0){
+								System.out.println("p: "+p.getX()+","+p.getY() +" "+ r+" "+g+" "+b);
+								tpt = p;
+								break;
+							}
+							//img.setRGB((int)p.getX(), (int)p.getY(), 0xff0000);
+						}
+					}
+					//File f = new File ("asdf.png");
+					//ImageIO.write(img, "PNG", f);
+					
+					int tapInterval = 0;
 					int tapTime = 0;
+					
+					switch (aRobot.getBirdTypeOnSling()) 
+					{
+
+					case RedBird:
+						tapInterval = 0; break;               // start of trajectory
+					case YellowBird:
+						tapInterval = 65 + randomGenerator.nextInt(25);break; // 65-90% of the way
+					case WhiteBird:
+						tapInterval =  70 + randomGenerator.nextInt(20);break; // 70-90% of the way
+					case BlackBird:
+						tapInterval =  70 + randomGenerator.nextInt(20);break; // 70-90% of the way
+					case BlueBird:
+						tapInterval =  65 + randomGenerator.nextInt(20);break; // 65-85% of the way
+					default:
+						tapInterval =  60;
+					}		
+					
+					if (tpt != null){
+						tapTime = tp.getTapTime(sling, releasePoint, tpt, tapInterval);
+						System.out.println(tpt.getX() + ","+tpt.getY());
+						System.out.println("tapTime: "+tapTime);
+					}
 					//int tapInterval = 0;
 					//int tapTime = tp.getTapTime(sling, releasePoint, _tpt, tapInterval);
 					dx = (int)releasePoint.getX() - refPoint.x;
@@ -463,6 +523,7 @@ public class NaiveAgent implements Runnable {
 						}
 
 						int tapTime = tp.getTapTime(sling, releasePoint, _tpt, tapInterval);
+						System.out.println("tapTime: "+tapTime);
 						dx = (int)releasePoint.getX() - refPoint.x;
 						dy = (int)releasePoint.getY() - refPoint.y;
 						shot = new Shot(refPoint.x, refPoint.y, dx, dy, 0, tapTime);

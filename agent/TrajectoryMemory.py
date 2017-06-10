@@ -13,11 +13,11 @@ class TrajectoryMemory:
         self.init_load()
         np.random.seed(1)
 
-    def add(self, img, info, action, reward, fst_shot):
+    def add(self, img, info, action, reward, fst_shot, policy):
         if self.size > self.MAX_SIZE:
             self.memory.leftpop()
             self.size -= 1
-        data = [img, info, action, reward]
+        data = [img, info, action, reward, policy]
         if fst_shot:
             print('fst_shot')
             if self.size > 0:
@@ -29,8 +29,10 @@ class TrajectoryMemory:
             self.memory[-1].append(data)
 
     def save(self, ep_num, episode):
-        f = open(self.PATH+'episode-'+str(ep_num)+'.json','w')
+        fname = self.PATH+'episode-'+str(ep_num)+'.json'
+        f = open(fname,'w')
         f.write(json.dumps(episode))
+        print("episode saved into "+fname)
         f.close()
 
     def init_load(self):
@@ -40,6 +42,7 @@ class TrajectoryMemory:
         if self.total_size > self.MAX_SIZE:
             start = self.total_size - self.MAX_SIZE
         for i in range(start, self.total_size):
+            print(i)
             f = open(self.PATH+'episode-'+str(i)+'.json').read()
             self.memory.append(json.loads(f))
             self.size += 1

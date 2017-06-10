@@ -284,11 +284,11 @@ public class VisionRealShape
         			if (b.centerX < 650) b.draw(g, true, Color.RED);
         		}
         		else b.draw(g, true, Color.RED);
-        		
+        		/*
         		g.setColor(Color.white);
         		if(b.id != unassigned)
         			g.drawString(b.id + "", (int)b.centerX - 5, (int)b.centerY + 5);// 10: font size
-        		
+        		*/
         	}
         }
         return image;

@@ -57,7 +57,7 @@ class Observation:
 
         rgbpix = np.array(im)
         hsvpix = np.array(im.convert('HSV'))
-        img = np.zeros((globalConfig.OBSERVE_SIZE, globalConfig.OBSERVE_SIZE)).tolist()
+        img = np.zeros((globalConfig.OBSERVE_SIZE, globalConfig.OBSERVE_SIZE), dtype=np.int).tolist()
         for w in range(globalConfig.OBSERVE_SIZE):
             for h in range(globalConfig.OBSERVE_SIZE):
                 r, g, b = rgbpix[h][w]

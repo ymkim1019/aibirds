@@ -12,6 +12,11 @@ class Configuration:
         self.AGENT_TYPE = 'RETRACE'
         #self.AGENT_TYPE = 'DQN'
         self.STD_SLING_HEIGHT = 60
+
         self.OBSERVE_SIZE = 84
+        self.ANGLE_MAX = 70
+        self.ANGLE_MIN = 10
+        self.ANGLE_NUM = 12
+        self.ANGLE_STEP = (self.ANGLE_MAX - self.ANGLE_MIN) / self.ANGLE_NUM
 
 globalConfig = Configuration()
